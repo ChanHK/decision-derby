@@ -182,7 +182,7 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} className="relative flex-1 overflow-hidden rounded-2xl border-[4px] border-ink">
+        <div ref={viewRef} className="relative flex-1 self-start overflow-hidden rounded-2xl border-[4px] border-ink" style={{ height: 48 + choices.length * 96 }}>
           <div className="absolute top-0 left-0 h-full" style={{ width: TRACK, transform: `translateX(${-cam}px)` }}>
             <div className="h-10 crowd-bg" />
             {choices.map((_, i) => (
