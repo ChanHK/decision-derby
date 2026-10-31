@@ -31,7 +31,7 @@ function Horse({ color, state, running }: { color: string; state: HorseState; ru
       className={state === "drunk" ? "horse-wobble" : ""}
       style={{ ["--leg" as string]: running ? dur : "0s", overflow: "visible" }}>
       <g className={running ? "horse-bob" : ""}>
-        {[[38, 0], [48, 1], [80, 1], [90, 0]].map(([lx, alt], i) => (
+        {([[38, 0], [48, 1], [80, 1], [90, 0]] as const).map(([lx, alt], i) => (
           <rect key={i} x={lx} y={48} width="7" height="26" rx="3" fill={color} stroke="var(--ink)" strokeWidth="2.5"
             className={running ? (alt ? "leg-b" : "leg-a") : ""} style={{ transformOrigin: `${lx + 3.5}px 50px` }} />
         ))}
@@ -105,7 +105,7 @@ function Index() {
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       for (let i = 0; i < hRef.current.length; i++) {
-        const h = hRef.current[i];
+        const h = hRef.current[i]!;
         if (h.finish !== undefined) { h.x += 60 * dt; continue; }
         if (t > h.next) { h.state = randomState(); h.next = t + 1.2 + Math.random() * 2; }
         h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base) * dt);
@@ -199,7 +199,7 @@ function Index() {
             <div className="absolute top-1 font-display text-xl text-primary-foreground bg-primary px-2 rounded" style={{ left: FINISH + 60 }}>FINISH</div>
             {horses.map((h, i) => (
               <div key={i} className="absolute" style={{ top: 40 + i * 96 + 14, left: h.x, transition: "none" }}>
-                <Horse color={COATS[i]} state={h.state} running={phase === "race" || (phase === "done")} />
+                <Horse color={COATS[i]!} state={h.state} running={phase === "race" || (phase === "done")} />
                 {phase === "race" && h.state !== "normal" && h.finish === undefined && (
                   <span className="absolute -top-3 left-8 text-xl animate-bounce">{STATE_INFO[h.state].emoji}</span>
                 )}
@@ -223,7 +223,7 @@ function Index() {
             <div className="flex items-end justify-center gap-3 mt-6">
               {[1, 0, 2].map((p) => order[p] !== undefined && (
                 <div key={p} className="flex flex-col items-center w-28">
-                  <div className="scale-75"><Horse color={COATS[order[p]]} state="normal" running={false} /></div>
+                  <div className="scale-75"><Horse color={COATS[order[p]!]!} state="normal" running={false} /></div>
                   <div className="text-sm font-bold truncate w-full">{choices[order[p]]}</div>
                   <div className="w-full rounded-t-lg border-[3px] border-ink bg-secondary font-display text-3xl flex items-center justify-center"
                     style={{ height: p === 0 ? 96 : p === 1 ? 66 : 44, background: p === 0 ? "var(--gold)" : undefined }}>{p + 1}</div>
