@@ -164,8 +164,8 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
       <g ref={rootRef}>
         <g ref={R("body")}>
           {/* far legs (behind body) */}
-          <g ref={R("hfU")}><Limb id="hf" color={color} far ink={ink} refs={refs} front={false} /></g>
-          <g ref={R("ffU")}><Limb id="ff" color={color} far ink={ink} refs={refs} front /></g>
+          <Limb id="hf" color={color} far ink={ink} refs={refs} front={false} />
+          <Limb id="ff" color={color} far ink={ink} refs={refs} front />
           {/* tail chain */}
           <g ref={R("t1")}>
             <path d="M0 0 Q-10 8 -4 20 Q4 12 6 2 Z" fill={mane} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
@@ -208,8 +208,8 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
             </g>
           </g>
           {/* near legs (in front of body) */}
-          <g ref={R("hnU")}><Limb id="hn" color={color} ink={ink} refs={refs} front={false} /></g>
-          <g ref={R("fnU")}><Limb id="fn" color={color} ink={ink} refs={refs} front /></g>
+          <Limb id="hn" color={color} ink={ink} refs={refs} front={false} />
+          <Limb id="fn" color={color} ink={ink} refs={refs} front />
         </g>
       </g>
     </svg>
