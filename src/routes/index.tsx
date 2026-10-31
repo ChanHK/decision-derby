@@ -78,7 +78,7 @@ function Index() {
 
   useEffect(() => {
     if (phase !== "race") return;
-    let raf = 0; let last = performance.now(); let t = 0; const fin: number[] = [];
+    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = [];
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       for (let i = 0; i < hRef.current.length; i++) {
@@ -92,7 +92,9 @@ function Index() {
       setHorses(hRef.current.map((h) => ({ ...h })));
       const running = hRef.current.filter((h) => h.finish === undefined);
       const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH;
-      setCam(Math.min(maxCam, Math.max(0, lead - vw * 0.6)));
+      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.6));
+      camR = camR < 0 ? target : camR + (target - camR) * Math.min(1, dt * 6);
+      setCam(camR);
       if (fin.length === hRef.current.length) { setOrder([...fin]); setTimeout(() => setPhase("done"), 900); return; }
       if (fin.length && !order.length) setOrder([...fin]);
       raf = requestAnimationFrame(step);
