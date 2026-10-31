@@ -7,16 +7,20 @@ export const STATE_INFO: Record<HorseState, { label: string; emoji: string }> = 
   tired: { label: "Tired", emoji: "💤" },
 };
 
-export function speedFor(state: HorseState, t: number, base: number): number {
+/** Progress (0..1) after which horses enter the final sprint. */
+export const SPRINT_AT = 0.75;
+
+export function speedFor(state: HorseState, t: number, base: number, progress = 0): number {
+  const sprint = progress >= SPRINT_AT ? 1.45 + (progress - SPRINT_AT) * 1.2 : 1;
   switch (state) {
     case "turbo":
-      return base * 2.1;
+      return base * 2.1 * sprint;
     case "tired":
-      return base * 0.35;
+      return base * (progress >= SPRINT_AT ? 0.8 : 0.35) * sprint;
     case "drunk":
-      return base * (Math.sin(t * 3) * 1.4 + 0.1);
+      return base * (Math.sin(t * 3) * 0.9 + 0.55) * sprint;
     default:
-      return base;
+      return base * sprint;
   }
 }
 
