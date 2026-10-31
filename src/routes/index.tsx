@@ -31,18 +31,29 @@ function Horse({ color, state, running }: { color: string; state: HorseState; ru
       className={state === "drunk" ? "horse-wobble" : ""}
       style={{ ["--leg" as string]: running ? dur : "0s", overflow: "visible" }}>
       <g className={running ? "horse-bob" : ""}>
-        {([[38, 0], [48, 1], [80, 1], [90, 0]] as const).map(([lx, alt], i) => (
-          <rect key={i} x={lx} y={48} width="7" height="26" rx="3" fill={color} stroke="var(--ink)" strokeWidth="2.5"
-            className={running ? (alt ? "leg-b" : "leg-a") : ""} style={{ transformOrigin: `${lx + 3.5}px 50px` }} />
+        {([[40, 0], [50, 1], [70, 1], [80, 0]] as const).map(([lx, alt], i) => (
+          <g key={i} className={running ? (alt ? "leg-b" : "leg-a") : ""} style={{ transformOrigin: `${lx + 4}px 54px` }}>
+            <rect x={lx} y={52} width="9" height="18" rx="4.5" fill={color} stroke="var(--ink)" strokeWidth="2.5" />
+            <rect x={lx - 1} y={66} width="11" height="7" rx="3" fill="var(--ink)" />
+          </g>
         ))}
-        <path d="M30 40 Q18 30 10 46 Q20 44 28 50" fill="var(--ink)" />
-        <ellipse cx="64" cy="44" rx="36" ry="17" fill={color} stroke="var(--ink)" strokeWidth="3" />
-        <path d="M88 36 L100 12 L116 20 L110 32 L98 46 Z" fill={color} stroke="var(--ink)" strokeWidth="3" strokeLinejoin="round" />
-        <path d="M90 34 Q94 16 102 10" stroke="var(--ink)" strokeWidth="6" fill="none" strokeLinecap="round" />
-        <circle cx="106" cy="20" r="2.5" fill="var(--ink)" />
-        <path d="M100 12 L102 4 L106 12" fill={color} stroke="var(--ink)" strokeWidth="2.5" />
-        <rect x="56" y="22" width="18" height="10" rx="3" fill="var(--saddle)" stroke="var(--ink)" strokeWidth="2.5" />
-        <circle cx="65" cy="14" r="7" fill="var(--jockey)" stroke="var(--ink)" strokeWidth="2.5" />
+        {/* fluffy tail */}
+        <path d="M30 42 Q12 34 8 50 Q14 46 18 52 Q20 46 30 50 Z" fill="var(--ink)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
+        {/* round body */}
+        <ellipse cx="58" cy="46" rx="28" ry="16" fill={color} stroke="var(--ink)" strokeWidth="3" />
+        {/* big head */}
+        <ellipse cx="94" cy="30" rx="20" ry="18" fill={color} stroke="var(--ink)" strokeWidth="3" />
+        <ellipse cx="108" cy="38" rx="10" ry="8" fill="var(--gate)" stroke="var(--ink)" strokeWidth="2.5" />
+        <circle cx="106" cy="37" r="1.5" fill="var(--ink)" /><circle cx="111" cy="37" r="1.5" fill="var(--ink)" />
+        {/* ears */}
+        <path d="M82 16 L84 4 L91 14 Z" fill={color} stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" />
+        <path d="M92 13 L97 2 L101 14 Z" fill={color} stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" />
+        {/* mane tuft */}
+        <path d="M78 22 Q80 10 90 12 Q86 18 92 18 Q80 22 78 34 Z" fill="var(--ink)" />
+        {/* big eye + blush */}
+        <circle cx="96" cy="26" r="5.5" fill="var(--ink)" />
+        <circle cx="98" cy="24" r="2" fill="var(--gate)" />
+        <ellipse cx="96" cy="36" rx="4" ry="2.5" fill="var(--primary)" opacity="0.45" />
       </g>
     </svg>
   );
@@ -189,7 +200,7 @@ function Index() {
               <div key={i} className="relative h-24 dirt-bg border-b-[3px] border-dashed border-track-line" />
             ))}
             {/* start gates */}
-            <div className="absolute top-10 bottom-0" style={{ left: START + 30 }}>
+            <div className="absolute top-10 bottom-0 z-10" style={{ left: START + 118 }}>
               {choices.map((_, i) => (
                 <div key={i} className="h-24 w-4 bg-gate border-x-[3px] border-ink transition-transform duration-500 origin-top"
                   style={{ transform: phase === "race" || phase === "done" ? "scaleY(0.05)" : "none" }} />
