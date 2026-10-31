@@ -51,6 +51,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-ink: var(--ink);
+  --color-gate: var(--gate);
+  --color-track-line: var(--track-line);
+  --font-display: "Luckiest Guy", cursive;
+  --font-sans: "Nunito", sans-serif;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -63,19 +68,34 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
+  --background: oklch(0.93 0.08 140);
+  --foreground: oklch(0.25 0.04 50);
+  --card: oklch(0.98 0.03 90);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
+  --primary: oklch(0.58 0.2 30);
+  --primary-foreground: oklch(0.99 0.01 90);
+  --secondary: oklch(0.9 0.08 85);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
   --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
+  --accent: oklch(0.85 0.17 90);
+  --ink: oklch(0.22 0.03 40);
+  --gate: oklch(0.95 0.01 90);
+  --track-line: oklch(0.95 0.03 80 / 60%);
+  --dirt: oklch(0.68 0.1 60);
+  --dirt-2: oklch(0.64 0.1 58);
+  --grass: oklch(0.72 0.15 140);
+  --grass-2: oklch(0.68 0.15 140);
+  --gold: oklch(0.85 0.17 90);
+  --saddle: oklch(0.55 0.2 260);
+  --jockey: oklch(0.85 0.17 90);
+  --horse-1: oklch(0.6 0.12 50);
+  --horse-2: oklch(0.95 0.02 90);
+  --horse-3: oklch(0.35 0.04 40);
+  --horse-4: oklch(0.75 0.13 70);
+  --horse-5: oklch(0.6 0.03 260);
   --accent-foreground: oklch(0.208 0.042 265.755);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
@@ -142,3 +162,25 @@
     color: var(--color-foreground);
   }
 }
+
+body { font-family: var(--font-sans); }
+.font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
+.cartoon-card { background: var(--card); border: 4px solid var(--ink); border-radius: 1.25rem; box-shadow: 6px 6px 0 var(--ink); }
+.cartoon-btn { border: 3px solid var(--ink); border-radius: 0.9rem; box-shadow: 4px 4px 0 var(--ink); transition: transform .1s, box-shadow .1s; }
+.cartoon-btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--ink); }
+.grass-bg { background: repeating-linear-gradient(90deg, var(--grass) 0 60px, var(--grass-2) 60px 120px); }
+.dirt-bg { background: repeating-linear-gradient(90deg, var(--dirt) 0 80px, var(--dirt-2) 80px 160px); }
+.crowd-bg { background: radial-gradient(circle at 10px 14px, var(--horse-1) 6px, transparent 7px) 0 0/22px 40px, radial-gradient(circle at 10px 14px, var(--saddle) 6px, transparent 7px) 11px 6px/22px 40px, var(--secondary); border-bottom: 4px solid var(--ink); }
+.finish-line { background: repeating-conic-gradient(var(--ink) 0 25%, var(--gate) 0 50%) 0 0/20px 20px; }
+@keyframes legA { 0%,100% { transform: rotate(30deg) } 50% { transform: rotate(-30deg) } }
+@keyframes legB { 0%,100% { transform: rotate(-30deg) } 50% { transform: rotate(30deg) } }
+@keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+@keyframes wobble { 0%,100% { transform: rotate(-8deg) } 50% { transform: rotate(8deg) } }
+.leg-a { animation: legA var(--leg) linear infinite; }
+.leg-b { animation: legB var(--leg) linear infinite; }
+.horse-bob { animation: bob var(--leg) ease-in-out infinite; }
+.horse-wobble { animation: wobble .6s ease-in-out infinite; }
+@keyframes pop { 0% { transform: scale(2.5); opacity: 0 } 40% { transform: scale(1); opacity: 1 } 100% { transform: scale(.9); opacity: .9 } }
+.countdown-pop { animation: pop .8s ease-out; -webkit-text-stroke: 4px var(--ink); }
+@keyframes fall { 0% { transform: translateY(-10vh) rotate(0) } 100% { transform: translateY(110vh) rotate(720deg) } }
+.confetti { position: absolute; top: 0; width: 10px; height: 16px; border: 2px solid var(--ink); animation: fall linear infinite; }
