@@ -90,7 +90,8 @@ function Index() {
         if (h.x >= FINISH) { h.finish = t; fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
-      const lead = Math.max(...hRef.current.map((h) => h.x));
+      const running = hRef.current.filter((h) => h.finish === undefined);
+      const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH;
       setCam(Math.min(maxCam, Math.max(0, lead - vw * 0.6)));
       if (fin.length === hRef.current.length) { setOrder([...fin]); setTimeout(() => setPhase("done"), 900); return; }
       if (fin.length && !order.length) setOrder([...fin]);
