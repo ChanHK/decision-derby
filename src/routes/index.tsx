@@ -166,7 +166,7 @@ function Index() {
               <div key={i} className="relative h-[150px] dirt-bg border-b-[3px] border-dashed border-track-line" />
             ))}
             {/* start gates */}
-            <div className="absolute top-10 bottom-0 z-10" style={{ left: START + 196 }}>
+            <div className="absolute top-10 bottom-0 z-10" style={{ left: START + 212 }}>
               {choices.map((_, i) => (
                 <div key={i} className="h-[150px] w-4 bg-gate border-x-[3px] border-ink transition-transform duration-500 origin-top"
                   style={{ transform: phase === "race" || phase === "done" ? "scaleY(0.05)" : "none" }} />
