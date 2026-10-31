@@ -1,0 +1,26 @@
+import { describe, expect, it } from "vitest";
+import { forwardCamera, randomState, speedFor } from "@/lib/race";
+
+describe("race behavior", () => {
+  it("never moves automatic camera backward after the leader finishes", () => {
+    expect(forwardCamera(1800, 1200, 2400)).toBe(1800);
+    expect(forwardCamera(1800, 2100, 2400)).toBe(2100);
+  });
+  it("gives leaders a higher chance of funny setbacks", () => {
+    const leading = randomState(() => 0.4, true);
+    expect(leading).toBe("moonwalk");
+    expect(randomState(() => 0.4, false)).toBe("normal");
+  });
+  it("can reverse a boosted leader", () => {
+    const rolls = [0.7, 0];
+    const state = randomState(() => rolls.shift() ?? 0, true, "turbo");
+    expect(state).toBe("wrongway");
+    expect(speedFor(state, 1, 190, 0.9)).toBeLessThan(0);
+  });
+  it("allows a leader to fall asleep before the finish and stops movement", () => {
+    const rolls = [0.3, 0.6];
+    const state = randomState(() => rolls.shift() ?? 0, true);
+    expect(state).toBe("nap");
+    expect(speedFor(state, 1, 190, 0.95)).toBe(0);
+  });
+});

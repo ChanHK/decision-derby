@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Horse } from "@/components/Horse";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, durationFor, randomState, speedFor, type HorseState } from "@/lib/race";
+import { Button } from "@/components/ui/button";
+import { Crosshair, Volume2, VolumeX } from "lucide-react";
+import { RaceSound } from "@/lib/race-sound";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, durationFor, forwardCamera, randomState, speedFor, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,12 +33,47 @@ function Index() {
   const [phase, setPhase] = useState<Phase>("setup");
   const [count, setCount] = useState(3);
   const [horses, setHorses] = useState<H[]>([]);
-  const [cam, setCam] = useState(0);
+  const [following, setFollowing] = useState(true);
+  const [soundOn, setSoundOn] = useState(false);
+  const followRef = useRef(true);
+  const autoCam = useRef(0);
+  const soundRef = useRef<RaceSound | null>(null);
+  const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [order, setOrder] = useState<number[]>([]);
   const [vw, setVw] = useState(1000);
   const viewRef = useRef<HTMLDivElement>(null);
   const hRef = useRef<H[]>([]);
   const valid = choices.map((c) => c.trim()).filter(Boolean);
+
+  useEffect(() => {
+    const sound = new RaceSound(); soundRef.current = sound;
+    return () => { sound.dispose(); soundRef.current = null; };
+  }, []);
+
+  function toggleSound() {
+    const enabled = !soundOn;
+    setSoundOn(enabled); soundRef.current?.setEnabled(enabled);
+  }
+
+  function pauseFollow() {
+    if (phase !== "race" && phase !== "done") return;
+    followRef.current = false; setFollowing(false);
+  }
+
+  function resumeFollow() {
+    followRef.current = true; setFollowing(true);
+    viewRef.current?.scrollTo({ left: autoCam.current, behavior: "smooth" });
+  }
+
+  function moveCamera(x: number) {
+    autoCam.current = x;
+    if (followRef.current && viewRef.current) viewRef.current.scrollLeft = x;
+  }
+
+  const soundToggle = <Button variant="secondary" size="icon" className="cartoon-btn shrink-0" onClick={toggleSound}
+    aria-label={soundOn ? "Mute sounds" : "Enable sounds"} aria-pressed={soundOn} title={soundOn ? "Mute sounds" : "Enable sounds"}>
+    {soundOn ? <Volume2 /> : <VolumeX />}
+  </Button>;
 
   useEffect(() => {
     const m = () => setVw(viewRef.current?.clientWidth ?? 1000);
@@ -48,8 +86,12 @@ function Index() {
   function start() {
     if (valid.length < 2) return;
     setChoices(valid);
+    followRef.current = true; setFollowing(true); autoCam.current = 0;
     const deck = [...PERSONALITIES].sort(() => Math.random() - 0.5);
-    hRef.current = valid.map((_, i) => ({ x: START, state: "normal", next: 3 + Math.random() * 3, base: deck[i]!.base + Math.random() * 12 - 6, kick: deck[i]!.kick }));
+    hRef.current = valid.map((_, i) => {
+      const personality = deck[i] ?? PERSONALITIES[0];
+      return { x: START, state: "normal", next: 3 + Math.random() * 3, base: (personality?.base ?? 170) + Math.random() * 12 - 6, kick: personality?.kick ?? 1.45 };
+    });
     setHorses([...hRef.current]);
     setOrder([]);
     setPhase("pan");
@@ -62,10 +104,10 @@ function Index() {
     const step = (now: number) => {
       const p = Math.min(1, (now - t0) / D);
       const e = p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
-      setCam(maxCam * (1 - e));
+      moveCamera(maxCam * (1 - e));
       if (p < 1) raf = requestAnimationFrame(step); else { setCount(3); setPhase("countdown"); }
     };
-    setCam(maxCam);
+    moveCamera(maxCam);
     const id = setTimeout(() => (raf = requestAnimationFrame(step)), 700);
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
   }, [phase, maxCam]);
@@ -82,8 +124,11 @@ function Index() {
     let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = []; let doneAt = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+      const unfinished = hRef.current.filter((h) => h.finish === undefined);
+      const leaderX = Math.max(...unfinished.map((h) => h.x));
       for (let i = 0; i < hRef.current.length; i++) {
-        const h = hRef.current[i]!;
+        const h = hRef.current[i];
+        if (!h) continue;
         if (h.finish !== undefined) {
           // victory lap: coast into the winner's circle and slow to a stop
           const room = Math.max(0, TRACK - 260 - h.x);
@@ -91,25 +136,32 @@ function Index() {
           continue;
         }
         const prog = (h.x - START) / (FINISH - START);
+        const leading = h.x === leaderX && prog >= 0.08 && unfinished.length > 1;
         if (t > h.next) {
-          if (h.state !== "normal") { h.state = "normal"; h.next = t + 3.5 + Math.random() * 3; }
+          if (h.state !== "normal") {
+            const next = leading && h.state === "turbo" ? randomState(Math.random, true, "turbo") : "normal";
+            h.state = next;
+            h.next = t + (next === "normal" ? 3.5 + Math.random() * 3 : durationFor(next));
+            soundRef.current?.play(next);
+          }
           else {
-            let s = randomState();
-            if (prog >= SPRINT_AT && (s === "tired" || s === "nap")) s = "turbo";
+            let s = randomState(Math.random, leading);
+            if (!leading && prog >= SPRINT_AT && s === "tired") s = "turbo";
             if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
             h.state = s;
+            soundRef.current?.play(s);
             h.next = t + (s === "normal" ? 3.5 + Math.random() * 3 : durationFor(s));
           }
         }
         h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * dt);
-        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; fin.push(i); }
+        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; if (!fin.length) soundRef.current?.play("victory"); fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
-      const running = hRef.current.filter((h) => h.finish === undefined);
-      const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH + 300;
+      const lead = Math.min(FINISH + 400, Math.max(...hRef.current.map((h) => h.x)));
       const target = Math.min(maxCam, Math.max(0, lead - vw * 0.4));
-      camR = camR < 0 ? target : camR + (target - camR) * Math.min(1, dt * 6);
-      setCam(camR);
+      const forward = forwardCamera(Math.max(0, camR), target, maxCam);
+      camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
+      moveCamera(camR);
       if (fin.length === hRef.current.length) {
         if (doneAt < 0) { doneAt = t; setOrder([...fin]); }
         if (t - doneAt > 1.8) { setPhase("done"); return; }
@@ -126,6 +178,7 @@ function Index() {
     return (
       <main className="min-h-screen grass-bg flex items-center justify-center p-4">
         <div className="cartoon-card w-full max-w-lg p-6">
+          <div className="flex justify-end mb-2">{soundToggle}</div>
           <h1 className="font-display text-5xl text-center text-primary">Derby Decider</h1>
           <p className="text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
           <div className="mt-6 space-y-3">
@@ -166,11 +219,15 @@ function Index() {
   const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", banana: "bg-accent text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3">
+      <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
         <h1 className="font-display text-3xl text-primary-foreground" style={{ WebkitTextStroke: "2px var(--ink)" }}>Derby Decider</h1>
+        <div className="flex gap-2 items-center flex-wrap">
+        {!following && <Button variant="secondary" className="cartoon-btn" onClick={resumeFollow}><Crosshair /> Snap to leader</Button>}
+        {soundToggle}
         <span className={`font-display text-xl px-3 py-1 rounded-full border-[3px] border-ink ${sprinting ? "bg-primary text-primary-foreground sprint-glow" : "bg-card text-ink"}`}>
           {phase === "pan" ? "Surveying the track…" : phase === "countdown" ? "Get ready…" : sprinting ? "🔥 FINAL SPRINT!" : phase === "race" ? "Race on!" : "Finished!"}
         </span>
+        </div>
       </header>
       <div className="flex flex-1 px-2 pb-4 gap-3">
         {/* tote board */}
@@ -200,8 +257,19 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} className="relative flex-1 self-start overflow-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 }}>
-          <div className="absolute top-0 left-0 h-full" style={{ width: TRACK, transform: `translateX(${-cam}px)` }}>
+        <div ref={viewRef} aria-label="Race track" className="race-scroll relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+          onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
+          onPointerDown={(e) => {
+            pauseFollow();
+            if (e.pointerType !== "mouse" || e.button !== 0 || phase === "pan" || phase === "countdown") return;
+            const bounds = e.currentTarget.getBoundingClientRect();
+            if (e.clientY >= bounds.bottom - 20) return;
+            dragRef.current = { x: e.clientX, scroll: e.currentTarget.scrollLeft };
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => { const drag = dragRef.current; if (drag) e.currentTarget.scrollLeft = drag.scroll + drag.x - e.clientX; }}
+          onPointerUp={() => { dragRef.current = null; }} onPointerCancel={() => { dragRef.current = null; }}>
+          <div className="relative" style={{ width: TRACK, height: 52 + choices.length * 150 + 26 }}>
             <div className="h-[26px] crowd-bg" />
             <div className="relative h-[26px] rail"><div className="absolute inset-x-0 -bottom-[18px] h-[18px] bunting z-10" /></div>
             {choices.map((_, i) => (
@@ -271,8 +339,8 @@ function Index() {
               ))}
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button onClick={start} className="cartoon-btn bg-primary text-primary-foreground py-3 font-display text-xl">Race again</button>
-              <button onClick={() => setPhase("setup")} className="cartoon-btn bg-secondary py-3 font-display text-xl">Edit choices</button>
+              <Button onClick={start} className="cartoon-btn h-auto bg-primary text-primary-foreground py-3 font-display text-xl">Race again</Button>
+              <Button variant="secondary" onClick={() => setPhase("setup")} className="cartoon-btn h-auto py-3 font-display text-xl">Edit choices</Button>
             </div>
           </div>
         </div>
@@ -284,8 +352,8 @@ function Index() {
 function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = phase === "race" && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
-  const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" ? st : st === "zoomies" ? "turbo" : st === "nap" ? "tired" : "normal";
-  const anim = st === "nap" || st === "banana" ? "idle" : phase === "race" ? (h.finish !== undefined && h.x > TRACK - 300 ? "walk" : "gallop") : phase === "done" ? "idle" : "idle";
+  const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
+  const anim = st === "nap" ? "sleep" : st === "banana" ? "idle" : phase === "race" ? (h.finish !== undefined && h.x > TRACK - 300 ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "banana" ? "fx-slip" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? STATE_INFO[st].bubble : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
