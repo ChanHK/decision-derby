@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { Horse } from "@/components/Horse";
 import { STATE_INFO, randomState, speedFor, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
@@ -23,41 +24,6 @@ const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "done";
 type H = { x: number; state: HorseState; next: number; base: number; finish?: number };
-
-function Horse({ color, state, running }: { color: string; state: HorseState; running: boolean }) {
-  const dur = state === "turbo" ? "0.18s" : state === "tired" ? "0.7s" : "0.32s";
-  return (
-    <svg viewBox="0 0 120 80" width="110" height="74"
-      className={state === "drunk" ? "horse-wobble" : ""}
-      style={{ ["--leg" as string]: running ? dur : "0s", overflow: "visible" }}>
-      <g className={running ? "horse-bob" : ""}>
-        {([[40, 0], [50, 1], [70, 1], [80, 0]] as const).map(([lx, alt], i) => (
-          <g key={i} className={running ? (alt ? "leg-b" : "leg-a") : ""} style={{ transformOrigin: `${lx + 4}px 54px` }}>
-            <rect x={lx} y={52} width="9" height="18" rx="4.5" fill={color} stroke="var(--ink)" strokeWidth="2.5" />
-            <rect x={lx - 1} y={66} width="11" height="7" rx="3" fill="var(--ink)" />
-          </g>
-        ))}
-        {/* fluffy tail */}
-        <path d="M30 42 Q12 34 8 50 Q14 46 18 52 Q20 46 30 50 Z" fill="var(--ink)" stroke="var(--ink)" strokeWidth="2" strokeLinejoin="round" />
-        {/* round body */}
-        <ellipse cx="58" cy="46" rx="28" ry="16" fill={color} stroke="var(--ink)" strokeWidth="3" />
-        {/* big head */}
-        <ellipse cx="94" cy="30" rx="20" ry="18" fill={color} stroke="var(--ink)" strokeWidth="3" />
-        <ellipse cx="108" cy="38" rx="10" ry="8" fill="var(--gate)" stroke="var(--ink)" strokeWidth="2.5" />
-        <circle cx="106" cy="37" r="1.5" fill="var(--ink)" /><circle cx="111" cy="37" r="1.5" fill="var(--ink)" />
-        {/* ears */}
-        <path d="M82 16 L84 4 L91 14 Z" fill={color} stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" />
-        <path d="M92 13 L97 2 L101 14 Z" fill={color} stroke="var(--ink)" strokeWidth="2.5" strokeLinejoin="round" />
-        {/* mane tuft */}
-        <path d="M78 22 Q80 10 90 12 Q86 18 92 18 Q80 22 78 34 Z" fill="var(--ink)" />
-        {/* big eye + blush */}
-        <circle cx="96" cy="26" r="5.5" fill="var(--ink)" />
-        <circle cx="98" cy="24" r="2" fill="var(--gate)" />
-        <ellipse cx="96" cy="36" rx="4" ry="2.5" fill="var(--primary)" opacity="0.45" />
-      </g>
-    </svg>
-  );
-}
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -179,7 +145,7 @@ function Index() {
           {choices.map((c, i) => {
             const h = horses[i]; const place = order.indexOf(i);
             return (
-              <div key={i} className="h-24 flex items-center">
+              <div key={i} className="h-[150px] flex items-center">
                 <div className="cartoon-card w-full p-2 flex items-center gap-2" style={{ borderLeft: `10px solid ${COATS[i]}` }}>
                   <div className="min-w-0">
                     <div className="font-bold truncate">{c}</div>
@@ -193,26 +159,26 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} className="relative flex-1 self-start overflow-hidden rounded-2xl border-[4px] border-ink" style={{ height: 48 + choices.length * 96 }}>
+        <div ref={viewRef} className="relative flex-1 self-start overflow-hidden rounded-2xl border-[4px] border-ink" style={{ height: 48 + choices.length * 150 }}>
           <div className="absolute top-0 left-0 h-full" style={{ width: TRACK, transform: `translateX(${-cam}px)` }}>
             <div className="h-10 crowd-bg" />
             {choices.map((_, i) => (
-              <div key={i} className="relative h-24 dirt-bg border-b-[3px] border-dashed border-track-line" />
+              <div key={i} className="relative h-[150px] dirt-bg border-b-[3px] border-dashed border-track-line" />
             ))}
             {/* start gates */}
-            <div className="absolute top-10 bottom-0 z-10" style={{ left: START + 118 }}>
+            <div className="absolute top-10 bottom-0 z-10" style={{ left: START + 196 }}>
               {choices.map((_, i) => (
-                <div key={i} className="h-24 w-4 bg-gate border-x-[3px] border-ink transition-transform duration-500 origin-top"
+                <div key={i} className="h-[150px] w-4 bg-gate border-x-[3px] border-ink transition-transform duration-500 origin-top"
                   style={{ transform: phase === "race" || phase === "done" ? "scaleY(0.05)" : "none" }} />
               ))}
             </div>
-            <div className="absolute top-10 bottom-0 w-5 finish-line" style={{ left: FINISH + 100 }} />
-            <div className="absolute top-1 font-display text-xl text-primary-foreground bg-primary px-2 rounded" style={{ left: FINISH + 60 }}>FINISH</div>
+            <div className="absolute top-10 bottom-0 w-5 finish-line" style={{ left: FINISH + 186 }} />
+            <div className="absolute top-1 font-display text-xl text-primary-foreground bg-primary px-2 rounded" style={{ left: FINISH + 150 }}>FINISH</div>
             {horses.map((h, i) => (
-              <div key={i} className="absolute" style={{ top: 40 + i * 96 + 14, left: h.x, transition: "none" }}>
-                <Horse color={COATS[i]!} state={h.state} running={phase === "race" || (phase === "done")} />
+              <div key={i} className="absolute" style={{ top: 40 + i * 150 + 22, left: h.x, transition: "none" }}>
+                <Horse color={COATS[i]!} state={h.state} anim={phase === "race" ? (h.finish === undefined ? "gallop" : "walk") : phase === "done" ? "walk" : "idle"} />
                 {phase === "race" && h.state !== "normal" && h.finish === undefined && (
-                  <span className="absolute -top-3 left-8 text-xl animate-bounce">{STATE_INFO[h.state].emoji}</span>
+                  <span className="absolute -top-3 left-20 text-3xl animate-bounce">{STATE_INFO[h.state].emoji}</span>
                 )}
               </div>
             ))}
@@ -234,7 +200,7 @@ function Index() {
             <div className="flex items-end justify-center gap-3 mt-6">
               {[1, 0, 2].map((p) => order[p] !== undefined && (
                 <div key={p} className="flex flex-col items-center w-28">
-                  <div className="scale-75"><Horse color={COATS[order[p]!]!} state="normal" running={false} /></div>
+                  <Horse color={COATS[order[p]!]!} anim={p === 0 ? "jump" : "idle"} size={110} />
                   <div className="text-sm font-bold truncate w-full">{choices[order[p]]}</div>
                   <div className="w-full rounded-t-lg border-[3px] border-ink bg-secondary font-display text-3xl flex items-center justify-center"
                     style={{ height: p === 0 ? 96 : p === 1 ? 66 : 44, background: p === 0 ? "var(--gold)" : undefined }}>{p + 1}</div>
