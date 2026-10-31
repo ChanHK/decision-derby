@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Horse } from "@/components/Horse";
-import { STATE_INFO, randomState, speedFor, type HorseState } from "@/lib/race";
+import { SPRINT_AT, STATE_INFO, randomState, speedFor, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
 });
 
 const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)"];
-const TRACK = 2400; // world px
+const TRACK = 2600; // world px
 const FINISH = 2200;
 const START = 120;
 
@@ -83,9 +83,10 @@ function Index() {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       for (let i = 0; i < hRef.current.length; i++) {
         const h = hRef.current[i]!;
-        if (h.finish !== undefined) { h.x += 60 * dt; continue; }
-        if (t > h.next) { h.state = randomState(); h.next = t + 1.2 + Math.random() * 2; }
-        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base) * dt);
+        if (h.finish !== undefined) { h.x += h.base * 1.6 * dt; continue; }
+        const prog = (h.x - START) / (FINISH - START);
+        if (t > h.next) { h.state = randomState(); if (prog >= SPRINT_AT && h.state === "tired") h.state = "turbo"; h.next = t + 1.2 + Math.random() * 2; }
+        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog) * dt);
         if (h.x >= FINISH) { h.finish = t; fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
@@ -133,25 +134,44 @@ function Index() {
   }
 
   const winner = order[0];
+  const ranks = horses.map((_, i) => i).sort((a, b) => {
+    const fa = order.indexOf(a), fb = order.indexOf(b);
+    if (fa >= 0 || fb >= 0) return (fa < 0 ? 99 : fa) - (fb < 0 ? 99 : fb);
+    return horses[b]!.x - horses[a]!.x;
+  });
+  const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
+  const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
+  const SUF = ["st", "nd", "rd", "th", "th"];
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between px-4 py-3">
-        <h1 className="font-display text-3xl text-primary">Derby Decider</h1>
-        <span className="font-bold text-foreground/80">{phase === "pan" ? "Surveying the track…" : phase === "race" ? "Race on!" : ""}</span>
+        <h1 className="font-display text-3xl text-primary-foreground" style={{ WebkitTextStroke: "2px var(--ink)" }}>Derby Decider</h1>
+        <span className={`font-display text-xl px-3 py-1 rounded-full border-[3px] border-ink ${sprinting ? "bg-primary text-primary-foreground sprint-glow" : "bg-card text-ink"}`}>
+          {phase === "pan" ? "Surveying the track…" : phase === "countdown" ? "Get ready…" : sprinting ? "🔥 FINAL SPRINT!" : phase === "race" ? "Race on!" : "Finished!"}
+        </span>
       </header>
-      <div className="flex flex-1 px-2 pb-4 gap-2">
-        {/* labels column */}
-        <aside className="w-36 sm:w-48 shrink-0 flex flex-col pt-10">
+      <div className="flex flex-1 px-2 pb-4 gap-3">
+        {/* tote board */}
+        <aside className="tote w-40 sm:w-56 shrink-0 self-start p-2">
+          <div className="font-display text-center text-accent text-lg h-[52px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
-            const h = horses[i]; const place = order.indexOf(i);
+            const h = horses[i]; const rank = ranks.indexOf(i); const done = order.includes(i);
             return (
               <div key={i} className="h-[150px] flex items-center">
-                <div className="cartoon-card w-full p-2 flex items-center gap-2" style={{ borderLeft: `10px solid ${COATS[i]}` }}>
-                  <div className="min-w-0">
-                    <div className="font-bold truncate">{c}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {place >= 0 ? `🏁 #${place + 1}` : h ? `${STATE_INFO[h.state].emoji} ${STATE_INFO[h.state].label}` : ""}
-                    </div>
+                <div className="tote-row w-full p-2">
+                  <div className="flex items-center gap-2">
+                    <span className="h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
+                    <div className="font-bold truncate flex-1">{c}</div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-1">
+                    <span className={`font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
+                    {h && phase === "race" && !done && (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
+                        {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
+                      </span>
+                    )}
+                    {done && <span className="text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink bg-accent text-ink">🏁 Finished</span>}
                   </div>
                 </div>
               </div>
@@ -159,27 +179,44 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} className="relative flex-1 self-start overflow-hidden rounded-2xl border-[4px] border-ink" style={{ height: 48 + choices.length * 150 }}>
+        <div ref={viewRef} className="relative flex-1 self-start overflow-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 }}>
           <div className="absolute top-0 left-0 h-full" style={{ width: TRACK, transform: `translateX(${-cam}px)` }}>
-            <div className="h-10 crowd-bg" />
+            <div className="h-[26px] crowd-bg" />
+            <div className="relative h-[26px] rail"><div className="absolute inset-x-0 -bottom-[18px] h-[18px] bunting z-10" /></div>
             {choices.map((_, i) => (
-              <div key={i} className="relative h-[150px] dirt-bg border-b-[3px] border-dashed border-track-line" />
+              <div key={i} className="relative h-[150px] track-sand border-b-[3px] border-dashed border-track-line">
+                {[0, 700, 1400].map((x) => (
+                  <span key={x} className="absolute bottom-2 font-display text-4xl text-gate/50" style={{ left: START + 260 + x }}>{i + 1}</span>
+                ))}
+              </div>
             ))}
+            <div className="h-[26px] rail" />
+            {/* distance markers */}
+            {[0.25, 0.5, SPRINT_AT].map((p) => {
+              const x = START + 200 + (FINISH - START) * p;
+              return (
+                <div key={p} className="absolute top-[26px] z-10 flex flex-col items-center" style={{ left: x }}>
+                  <span className={`font-display text-sm px-2 rounded border-2 border-ink ${p === SPRINT_AT ? "bg-primary text-primary-foreground" : "bg-card text-ink"}`}>
+                    {p === SPRINT_AT ? "SPRINT!" : `${Math.round((1 - p) * 400)}m`}
+                  </span>
+                </div>
+              );
+            })}
             {/* start gates */}
-            <div className="absolute top-10 bottom-0 z-10" style={{ left: START + 212 }}>
+            <div className="absolute top-[52px] z-10" style={{ left: START + 212 }}>
               {choices.map((_, i) => (
                 <div key={i} className="h-[150px] w-4 bg-gate border-x-[3px] border-ink transition-transform duration-500 origin-top"
                   style={{ transform: phase === "race" || phase === "done" ? "scaleY(0.05)" : "none" }} />
               ))}
             </div>
-            <div className="absolute top-10 bottom-0 w-5 finish-line" style={{ left: FINISH + 186 }} />
-            <div className="absolute top-1 font-display text-xl text-primary-foreground bg-primary px-2 rounded" style={{ left: FINISH + 150 }}>FINISH</div>
+            {/* finish arch */}
+            <div className="absolute top-[52px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
+            <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
+            <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
+            <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
             {horses.map((h, i) => (
-              <div key={i} className="absolute" style={{ top: 40 + i * 150 + 22, left: h.x, transition: "none" }}>
-                <Horse color={COATS[i]!} state={h.state} anim={phase === "race" ? (h.finish === undefined ? "gallop" : "walk") : phase === "done" ? "walk" : "idle"} />
-                {phase === "race" && h.state !== "normal" && h.finish === undefined && (
-                  <span className="absolute -top-3 left-20 text-3xl animate-bounce">{STATE_INFO[h.state].emoji}</span>
-                )}
+              <div key={i} className="absolute z-[5]" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
+                <Horse color={COATS[i]!} state={phase === "race" && h.finish === undefined ? h.state : "normal"} anim={phase === "race" ? "gallop" : phase === "done" ? "walk" : "idle"} />
               </div>
             ))}
           </div>
