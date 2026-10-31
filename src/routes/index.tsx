@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Horse } from "@/components/Horse";
-import { SPRINT_AT, STATE_INFO, randomState, speedFor, type HorseState } from "@/lib/race";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, durationFor, randomState, speedFor, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,12 +18,12 @@ export const Route = createFileRoute("/")({
 });
 
 const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)"];
-const TRACK = 2600; // world px
+const TRACK = 3300; // world px
 const FINISH = 2200;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; finish?: number };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -48,7 +48,8 @@ function Index() {
   function start() {
     if (valid.length < 2) return;
     setChoices(valid);
-    hRef.current = valid.map(() => ({ x: START, state: "normal", next: 1 + Math.random() * 2, base: 150 + Math.random() * 20 }));
+    const deck = [...PERSONALITIES].sort(() => Math.random() - 0.5);
+    hRef.current = valid.map((_, i) => ({ x: START, state: "normal", next: 3 + Math.random() * 3, base: deck[i]!.base + Math.random() * 12 - 6, kick: deck[i]!.kick }));
     setHorses([...hRef.current]);
     setOrder([]);
     setPhase("pan");
@@ -78,24 +79,41 @@ function Index() {
 
   useEffect(() => {
     if (phase !== "race") return;
-    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = [];
+    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = []; let doneAt = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       for (let i = 0; i < hRef.current.length; i++) {
         const h = hRef.current[i]!;
-        if (h.finish !== undefined) { h.x += h.base * 1.6 * dt; continue; }
+        if (h.finish !== undefined) {
+          // victory lap: coast into the winner's circle and slow to a stop
+          const room = Math.max(0, TRACK - 260 - h.x);
+          h.x += Math.min(h.base * 1.4, room * 2) * dt;
+          continue;
+        }
         const prog = (h.x - START) / (FINISH - START);
-        if (t > h.next) { h.state = randomState(); if (prog >= SPRINT_AT && h.state === "tired") h.state = "turbo"; h.next = t + 1.2 + Math.random() * 2; }
-        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog) * dt);
-        if (h.x >= FINISH) { h.finish = t; fin.push(i); }
+        if (t > h.next) {
+          if (h.state !== "normal") { h.state = "normal"; h.next = t + 3.5 + Math.random() * 3; }
+          else {
+            let s = randomState();
+            if (prog >= SPRINT_AT && (s === "tired" || s === "nap")) s = "turbo";
+            if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
+            h.state = s;
+            h.next = t + (s === "normal" ? 3.5 + Math.random() * 3 : durationFor(s));
+          }
+        }
+        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * dt);
+        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
       const running = hRef.current.filter((h) => h.finish === undefined);
-      const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH;
-      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.6));
+      const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH + 300;
+      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.4));
       camR = camR < 0 ? target : camR + (target - camR) * Math.min(1, dt * 6);
       setCam(camR);
-      if (fin.length === hRef.current.length) { setOrder([...fin]); setTimeout(() => setPhase("done"), 900); return; }
+      if (fin.length === hRef.current.length) {
+        if (doneAt < 0) { doneAt = t; setOrder([...fin]); }
+        if (t - doneAt > 1.8) { setPhase("done"); return; }
+      }
       if (fin.length && !order.length) setOrder([...fin]);
       raf = requestAnimationFrame(step);
     };
@@ -145,7 +163,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", banana: "bg-accent text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between px-4 py-3">
@@ -217,9 +235,14 @@ function Index() {
             <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
             <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
             <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
+            {/* winner's circle beyond the finish */}
+            <div className="absolute top-[60px] z-0 font-display text-2xl text-ink bg-gate border-[3px] border-ink px-3 rounded-lg -rotate-3" style={{ left: FINISH + 560 }}>🏆 WINNER'S CIRCLE</div>
+            {choices.map((_, i) => (
+              <span key={i} className="absolute text-3xl z-0" style={{ top: 52 + i * 150 + 110, left: FINISH + 420 + ((i * 173) % 500) }}>{["🌷", "🎈", "🌻", "🎉", "🥕"][i]}</span>
+            ))}
             {horses.map((h, i) => (
               <div key={i} className="absolute z-[5]" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
-                <Horse color={COATS[i]!} state={phase === "race" && h.finish === undefined ? h.state : "normal"} anim={phase === "race" ? "gallop" : phase === "done" ? "walk" : "idle"} />
+                <HorseActor h={h} i={i} phase={phase} />
               </div>
             ))}
           </div>
@@ -255,6 +278,30 @@ function Index() {
         </div>
       )}
     </main>
+  );
+}
+
+function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
+  const racing = phase === "race" && h.finish === undefined;
+  const st: HorseState = racing ? h.state : "normal";
+  const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" ? st : st === "zoomies" ? "turbo" : st === "nap" ? "tired" : "normal";
+  const anim = st === "nap" || st === "banana" ? "idle" : phase === "race" ? (h.finish !== undefined && h.x > TRACK - 300 ? "walk" : "gallop") : phase === "done" ? "idle" : "idle";
+  const flip = st === "wrongway";
+  const wrap = st === "banana" ? "fx-slip" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
+  const bubble = racing ? STATE_INFO[st].bubble : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
+  return (
+    <div className="relative">
+      <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
+        <Horse color={COATS[i]!} state={vis} anim={anim} />
+      </div>
+      {st === "banana" && <span className="absolute left-[120px] top-[100px] text-3xl">🍌</span>}
+      {st === "nap" && <span className="absolute left-[150px] -top-2 text-2xl fx-float">💤</span>}
+      {st === "moonwalk" && <span className="absolute -left-6 top-[90px] text-2xl">✨</span>}
+      {st === "wrongway" && <span className="absolute left-[170px] top-6 text-3xl fx-float">❓</span>}
+      {bubble && (
+        <span className="absolute -top-3 left-[110px] whitespace-nowrap rounded-full border-[3px] border-ink bg-card px-2 font-display text-sm text-ink">{bubble}</span>
+      )}
+    </div>
   );
 }
 
