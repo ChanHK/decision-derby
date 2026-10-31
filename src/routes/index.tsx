@@ -78,24 +78,41 @@ function Index() {
 
   useEffect(() => {
     if (phase !== "race") return;
-    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = [];
+    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = []; let doneAt = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       for (let i = 0; i < hRef.current.length; i++) {
         const h = hRef.current[i]!;
-        if (h.finish !== undefined) { h.x += h.base * 1.6 * dt; continue; }
+        if (h.finish !== undefined) {
+          // victory lap: coast into the winner's circle and slow to a stop
+          const room = Math.max(0, TRACK - 260 - h.x);
+          h.x += Math.min(h.base * 1.4, room * 2) * dt;
+          continue;
+        }
         const prog = (h.x - START) / (FINISH - START);
-        if (t > h.next) { h.state = randomState(); if (prog >= SPRINT_AT && h.state === "tired") h.state = "turbo"; h.next = t + 1.2 + Math.random() * 2; }
-        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog) * dt);
-        if (h.x >= FINISH) { h.finish = t; fin.push(i); }
+        if (t > h.next) {
+          if (h.state !== "normal") { h.state = "normal"; h.next = t + 3.5 + Math.random() * 3; }
+          else {
+            let s = randomState();
+            if (prog >= SPRINT_AT && (s === "tired" || s === "nap")) s = "turbo";
+            if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
+            h.state = s;
+            h.next = t + (s === "normal" ? 3.5 + Math.random() * 3 : durationFor(s));
+          }
+        }
+        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * dt);
+        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
       const running = hRef.current.filter((h) => h.finish === undefined);
-      const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH;
-      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.6));
+      const lead = running.length ? Math.max(...running.map((h) => h.x)) : FINISH + 300;
+      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.4));
       camR = camR < 0 ? target : camR + (target - camR) * Math.min(1, dt * 6);
       setCam(camR);
-      if (fin.length === hRef.current.length) { setOrder([...fin]); setTimeout(() => setPhase("done"), 900); return; }
+      if (fin.length === hRef.current.length) {
+        if (doneAt < 0) { doneAt = t; setOrder([...fin]); }
+        if (t - doneAt > 1.8) { setPhase("done"); return; }
+      }
       if (fin.length && !order.length) setOrder([...fin]);
       raf = requestAnimationFrame(step);
     };
