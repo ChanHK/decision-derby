@@ -40,11 +40,23 @@ export function speedFor(state: HorseState, t: number, base: number, progress = 
 }
 
 /** Surprises are rare: most rolls keep the horse galloping normally. */
-export function randomState(rand: () => number = Math.random): HorseState {
+export function randomState(rand: () => number = Math.random, leading = false, previous: HorseState = "normal"): HorseState {
   const r = rand();
+  if (leading) {
+    if (r < (previous === "turbo" ? 0.8 : 0.55)) {
+      const mishaps: HorseState[] = ["wrongway", "moonwalk", "nap", "banana"];
+      return mishaps[Math.floor(rand() * mishaps.length)] ?? "nap";
+    }
+    return "normal";
+  }
   if (r < 0.45) return "normal";
   const specials: HorseState[] = ["turbo", "drunk", "tired", "moonwalk", "wrongway", "banana", "nap", "zoomies"];
-  return specials[Math.floor(rand() * specials.length)]!;
+  return specials[Math.floor(rand() * specials.length)] ?? "normal";
+}
+
+/** Auto-follow advances only; manual scrolling deliberately bypasses this rule. */
+export function forwardCamera(current: number, target: number, maximum: number): number {
+  return Math.min(maximum, Math.max(current, target, 0));
 }
 
 /** Seconds a special status lasts before the horse snaps back to normal. */
