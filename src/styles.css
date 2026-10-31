@@ -89,6 +89,14 @@
   --grass: oklch(0.72 0.15 140);
   --grass-2: oklch(0.68 0.15 140);
   --gold: oklch(0.85 0.17 90);
+  --fx-blush: oklch(0.72 0.18 10);
+  --fx-water: oklch(0.8 0.1 230);
+  --fx-fire: oklch(0.68 0.22 40);
+  --track-dust: oklch(0.8 0.06 70 / 70%);
+  --board: oklch(0.28 0.06 150);
+  --board-2: oklch(0.22 0.05 150);
+  --sand: oklch(0.74 0.1 65);
+  --sand-2: oklch(0.7 0.1 62);
   --saddle: oklch(0.55 0.2 260);
   --jockey: oklch(0.85 0.17 90);
   --horse-1: oklch(0.6 0.12 50);
@@ -189,3 +197,31 @@ body { font-family: var(--font-sans); }
 .countdown-pop { animation: pop .8s ease-out; -webkit-text-stroke: 4px var(--ink); }
 @keyframes fall { 0% { transform: translateY(-10vh) rotate(0) } 100% { transform: translateY(110vh) rotate(720deg) } }
 .confetti { position: absolute; top: 0; width: 10px; height: 16px; border: 2px solid var(--ink); animation: fall linear infinite; }
+
+.track-sand { background:
+  repeating-linear-gradient(90deg, transparent 0 22px, oklch(0.6 0.08 55 / 18%) 22px 24px),
+  linear-gradient(var(--sand), var(--sand-2)); }
+.rail { background:
+  linear-gradient(var(--gate), var(--gate)) 0 6px/100% 6px no-repeat,
+  linear-gradient(var(--gate), var(--gate)) 0 18px/100% 5px no-repeat,
+  repeating-linear-gradient(90deg, var(--gate) 0 8px, transparent 8px 70px) 0 0/100% 100% no-repeat,
+  var(--grass); border-block: 3px solid var(--ink); }
+.bunting { background: repeating-conic-gradient(from 150deg at 50% 0, var(--primary) 0 60deg, transparent 0 360deg) 0 0/28px 18px,
+  repeating-conic-gradient(from 150deg at 50% 0, var(--gold) 0 60deg, transparent 0 360deg) 14px 0/28px 18px; }
+.tote { background: linear-gradient(var(--board), var(--board-2)); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 5px 5px 0 var(--ink); color: var(--gate); }
+.tote-row { background: oklch(0.18 0.04 150); border: 2px solid oklch(0.4 0.06 150); border-radius: .6rem; }
+.fx-spin { animation: fxspin .7s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes fxspin { to { transform: rotate(360deg) } }
+.fx-orbit { animation: fxspin 1.2s linear infinite; }
+.fx-tongue { animation: tongue .4s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: top; }
+@keyframes tongue { from { transform: rotate(-15deg) } to { transform: rotate(20deg) scaleY(1.2) } }
+.fx-bubble { animation: bubble 1.5s ease-out infinite; }
+@keyframes bubble { 0% { transform: translateY(20px) scale(.4); opacity: 0 } 30% { opacity: 1 } 100% { transform: translateY(-30px) scale(1.1); opacity: 0 } }
+.fx-sweat { animation: sweat .8s ease-in infinite; }
+@keyframes sweat { 0% { transform: translate(0,0); opacity: 1 } 100% { transform: translate(-10px,14px); opacity: 0 } }
+.fx-flame { animation: flame .15s steps(2) infinite alternate; }
+@keyframes flame { from { transform: scaleX(1) } to { transform: translateX(-6px) scaleX(1.15) } }
+.fx-dust { animation: dust .45s ease-out infinite; }
+@keyframes dust { 0% { transform: translateX(0) scale(.5); opacity: .9 } 100% { transform: translateX(-40px) scale(1.6); opacity: 0 } }
+.sprint-glow { animation: sprint .5s ease-in-out infinite alternate; }
+@keyframes sprint { from { filter: brightness(1) } to { filter: brightness(1.25) } }
