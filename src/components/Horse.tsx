@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { HorseState } from "@/lib/race";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "jump";
+export type HorseAnim = "idle" | "walk" | "gallop" | "jump" | "sleep";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -30,6 +30,15 @@ function legWalk(p: number, off: number, front: boolean): [number, number] {
 
 function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
   const blink = (t % 3.2) < 0.12 ? 0.1 : 1;
+  if (anim === "sleep") {
+    return {
+      y: 35, breathe: 1 + 0.035 * s(t * 2), body: 5,
+      neck: 52, head: 20, ear: 50, blink: 0.05,
+      fnU: -75, fnL: 125, ffU: -70, ffL: 120,
+      hnU: 75, hnL: -120, hfU: 70, hfL: -115,
+      t1: -10, t2: 15, t3: 20,
+    };
+  }
   if (jump >= 0) {
     const j = jump;
     const arc = s(Math.PI * j);
@@ -113,6 +122,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
   const animRef = useRef(anim);
   const stateRef = useRef(state);
   const jumpStart = useRef<number>(-1);
+  const sleepBlend = useRef(0);
 
   animRef.current = anim;
   useEffect(() => {
@@ -137,7 +147,16 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
         j = (now - jumpStart.current) / 650;
         if (j >= 1) { jumpStart.current = -1; j = -1; }
       }
-      const pose = solve(a, phase, (now - t0) / 1000, j);
+      const time = (now - t0) / 1000;
+      sleepBlend.current += ((a === "sleep" ? 1 : 0) - sleepBlend.current) * Math.min(1, dt * 10);
+      const pose = solve(a === "sleep" ? "idle" : a, phase, time, a === "sleep" ? -1 : j);
+      if (sleepBlend.current > 0.001) {
+        const sleeping = solve("sleep", phase, time, -1);
+        for (const k of [...Object.keys(PIVOT), "y", "breathe", "blink"] as (keyof Pose)[]) {
+          const fallback = k === "breathe" || k === "blink" ? 1 : 0;
+          pose[k] = (pose[k] ?? fallback) * (1 - sleepBlend.current) + (sleeping[k] ?? fallback) * sleepBlend.current;
+        }
+      }
       const drunk = st === "drunk" && a === "gallop";
       const tired = st === "tired" && a === "gallop";
       const extra: Partial<Record<Bone, number>> = drunk
@@ -206,7 +225,9 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
               </g>
               <path d="M-4 -12 Q2 -24 10 -18 Q4 -16 6 -10 Z" fill={mane} stroke={ink} strokeWidth="2" />
               <g transform="translate(12 -4)">
-                {state === "drunk" ? (
+                {anim === "sleep" ? (
+                  <path d="M-6 0 Q0 5 6 0" fill="none" stroke={ink} strokeWidth="2.5" strokeLinecap="round" />
+                ) : state === "drunk" ? (
                   <g className="fx-spin">
                     <circle r="6.5" fill="var(--gate)" stroke={ink} strokeWidth="2" />
                     <path d="M0 0 Q3 -1 2 2 Q-1 5 -4 1 Q-5 -4 1 -5 Q6 -4 5 2" fill="none" stroke={ink} strokeWidth="1.8" />
@@ -239,6 +260,11 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <Limb id="fn" color={color} ink={ink} refs={refs} front />
         </g>
       </g>
+      {anim === "sleep" && (
+        <g fill={ink} fontSize="15" fontWeight="900">
+          {[0, 1, 2].map((i) => <text key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.45}s` }} x={156 + i * 12} y={76 - i * 12}>Z</text>)}
+        </g>
+      )}
       {state === "drunk" && anim === "gallop" && (
         <g>
           {[0, 1, 2].map((i) => (
