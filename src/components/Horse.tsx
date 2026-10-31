@@ -138,14 +138,21 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
         if (j >= 1) { jumpStart.current = -1; j = -1; }
       }
       const pose = solve(a, phase, (now - t0) / 1000, j);
-      const wob = st === "drunk" && a === "gallop" ? 8 * s(now / 180) : 0;
+      const drunk = st === "drunk" && a === "gallop";
+      const tired = st === "tired" && a === "gallop";
+      const extra: Partial<Record<Bone, number>> = drunk
+        ? { body: 10 * s(now / 210), neck: 22 * s(now / 260), head: 28 * s(now / 190 + 1), ear: 35 * s(now / 120),
+            fnU: 14 * s(now / 150), ffU: -16 * s(now / 170), hnU: 12 * s(now / 160), t1: 20 * s(now / 140) }
+        : tired ? { neck: 22, head: 18, ear: 40, t1: -30 } : {};
       for (const k of Object.keys(PIVOT) as Bone[]) {
         const el = refs.current[k]; if (!el) continue;
         const [px, py] = PIVOT[k];
-        const rot = (pose[k] ?? 0) + (k === "body" ? wob : 0);
+        const rot = (pose[k] ?? 0) + (extra[k] ?? 0);
         el.setAttribute("transform", `translate(${px} ${py}) rotate(${rot.toFixed(2)})`);
       }
-      rootRef.current?.setAttribute("transform", `translate(0 ${(pose.y ?? 0).toFixed(2)})`);
+      const sway = drunk ? 9 * s(now / 330) : 0;
+      const yy = (pose.y ?? 0) + (drunk ? 6 * s(now / 240) : 0);
+      rootRef.current?.setAttribute("transform", `translate(0 ${yy.toFixed(2)}) rotate(${sway.toFixed(2)} 100 120)`);
       breatheRef.current?.setAttribute("transform", `scale(1 ${(pose.breathe ?? 1).toFixed(3)})`);
       eyeRef.current?.setAttribute("transform", `scale(1 ${pose.blink ?? 1})`);
       raf = requestAnimationFrame(tick);
@@ -199,12 +206,32 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
               </g>
               <path d="M-4 -12 Q2 -24 10 -18 Q4 -16 6 -10 Z" fill={mane} stroke={ink} strokeWidth="2" />
               <g transform="translate(12 -4)">
-                <g ref={eyeRef}>
-                  <ellipse cx="0" cy="0" rx="5" ry="6" fill={ink} />
-                  <circle cx="1.6" cy="-2" r="1.8" fill="var(--gate)" />
-                </g>
+                {state === "drunk" ? (
+                  <g className="fx-spin">
+                    <circle r="6.5" fill="var(--gate)" stroke={ink} strokeWidth="2" />
+                    <path d="M0 0 Q3 -1 2 2 Q-1 5 -4 1 Q-5 -4 1 -5 Q6 -4 5 2" fill="none" stroke={ink} strokeWidth="1.8" />
+                  </g>
+                ) : (
+                  <g ref={eyeRef}>
+                    <ellipse cx="0" cy="0" rx="5" ry="6" fill={ink} />
+                    <circle cx="1.6" cy="-2" r="1.8" fill="var(--gate)" />
+                  </g>
+                )}
+                {state === "tired" && <path d="M-7 -7 Q0 -2 7 -7 L7 -1 L-7 -1 Z" fill={color} stroke={ink} strokeWidth="2" />}
+                {state === "turbo" && <path d="M-8 -9 L6 -5" stroke={ink} strokeWidth="3" strokeLinecap="round" />}
               </g>
-              <ellipse cx="18" cy="6" rx="4" ry="2.5" fill="var(--primary)" opacity="0.35" />
+              <ellipse cx="18" cy="6" rx={state === "drunk" ? 7 : 4} ry={state === "drunk" ? 4 : 2.5} fill="var(--fx-blush)" opacity={state === "drunk" ? 0.9 : 0.35} />
+              {state === "drunk" && <path className="fx-tongue" d="M30 11 Q32 22 26 22 Q22 20 25 11 Z" fill="var(--fx-blush)" stroke={ink} strokeWidth="2" />}
+              {state === "drunk" && (
+                <g transform="translate(10 -26)">
+                  <g className="fx-orbit">
+                    {[0, 120, 240].map((d) => (
+                      <path key={d} transform={`rotate(${d}) translate(16 0) rotate(${-d})`} d="M0 -5 L1.5 -1.5 L5 -1 L2 1.5 L3 5 L0 3 L-3 5 L-2 1.5 L-5 -1 L-1.5 -1.5 Z" fill="var(--gold)" stroke={ink} strokeWidth="1.2" />
+                    ))}
+                  </g>
+                </g>
+              )}
+              {state === "tired" && <path className="fx-sweat" d="M-6 -10 Q-10 -4 -6 -2 Q-2 -4 -6 -10 Z" fill="var(--fx-water)" stroke={ink} strokeWidth="1.5" />}
             </g>
           </g>
           {/* near legs (in front of body) */}
@@ -212,6 +239,28 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <Limb id="fn" color={color} ink={ink} refs={refs} front />
         </g>
       </g>
+      {state === "drunk" && anim === "gallop" && (
+        <g>
+          {[0, 1, 2].map((i) => (
+            <circle key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.5}s` }} cx={150 + i * 6} cy="20" r={4 + i * 2} fill="var(--gate)" stroke={ink} strokeWidth="1.5" opacity="0.85" />
+          ))}
+          <text className="fx-bubble" x="160" y="10" fontSize="14" fontWeight="900" fill={ink}>hic!</text>
+        </g>
+      )}
+      {state === "turbo" && anim === "gallop" && (
+        <g className="fx-flame">
+          {[0, 1, 2].map((i) => (
+            <path key={i} d={`M${40 - i * 18} ${70 + i * 18} L${-10 - i * 14} ${66 + i * 18} L${-30 - i * 10} ${74 + i * 18} L${-6 - i * 14} ${80 + i * 18} Z`}
+              fill={i === 1 ? "var(--fx-fire)" : "var(--gold)"} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
+          ))}
+        </g>
+      )}
+      {anim === "gallop" && state !== "tired" && (
+        <g className="fx-dust">
+          <circle cx="40" cy="128" r="7" fill="var(--track-dust)" />
+          <circle cx="26" cy="124" r="5" fill="var(--track-dust)" />
+        </g>
+      )}
     </svg>
   );
 }
