@@ -169,8 +169,13 @@ body { font-family: var(--font-sans); }
 .cartoon-btn { border: 3px solid var(--ink); border-radius: 0.9rem; box-shadow: 4px 4px 0 var(--ink); transition: transform .1s, box-shadow .1s; }
 .cartoon-btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--ink); }
 .grass-bg { background: repeating-linear-gradient(90deg, var(--grass) 0 60px, var(--grass-2) 60px 120px); }
-.dirt-bg { background: repeating-linear-gradient(90deg, var(--dirt) 0 80px, var(--dirt-2) 80px 160px); }
-.crowd-bg { background: radial-gradient(circle at 10px 14px, var(--horse-1) 6px, transparent 7px) 0 0/22px 40px, radial-gradient(circle at 10px 14px, var(--saddle) 6px, transparent 7px) 11px 6px/22px 40px, var(--secondary); border-bottom: 4px solid var(--ink); }
+.dirt-bg { background: repeating-linear-gradient(90deg, var(--grass) 0 80px, var(--grass-2) 80px 160px); }
+.crowd-bg { background:
+  linear-gradient(var(--gate), var(--gate)) 0 30px/100% 4px no-repeat,
+  repeating-linear-gradient(90deg, var(--gate) 0 5px, transparent 5px 40px) 0 22px/100% 18px no-repeat,
+  radial-gradient(circle at 10px 10px, var(--horse-1) 6px, transparent 7px) 0 0/22px 22px,
+  radial-gradient(circle at 10px 10px, var(--saddle) 6px, transparent 7px) 11px 4px/22px 22px,
+  var(--grass-2); border-bottom: 4px solid var(--ink); }
 .finish-line { background: repeating-conic-gradient(var(--ink) 0 25%, var(--gate) 0 50%) 0 0/20px 20px; }
 @keyframes legA { 0%,100% { transform: rotate(30deg) } 50% { transform: rotate(-30deg) } }
 @keyframes legB { 0%,100% { transform: rotate(-30deg) } 50% { transform: rotate(30deg) } }
