@@ -209,9 +209,9 @@ export function midPackChaos(rand: () => number, previous?: HorseState): HorseSt
   const gags: HorseState[] = ["drunk", "moonwalk", "wrongway"];
   return gags[Math.min(gags.length - 1, Math.floor(rand() * gags.length))]!;
 }
-/** Final stretch: stalls/gags are purged so everyone sprints; mounts and crashes stay. */
+/** Final stretch: stalls/gags are purged so everyone sprints; every boost and crash carries on. */
 export function finishPurge(state: HorseState): HorseState {
-  return state === "rocket" || state === "skate" || state === "exploded" || state === "wiped" ? state : "normal";
+  return PANIC_POOL.includes(state) || state === "exploded" || state === "wiped" ? state : "normal";
 }
 /** Mounts still being ridden 5% before the line must crash. */
 export function crashFinish(state: HorseState, progress: number): HorseState {

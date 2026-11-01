@@ -31,6 +31,7 @@ describe("race director", () => {
     expect(finishPurge("ufo")).toBe("normal");
     expect(finishPurge("drunk")).toBe("normal");
     expect(finishPurge("rocket")).toBe("rocket");
+    for (const s of ["jet", "scuba", "laksa", "copter", "lunge", "biped"] as const) expect(finishPurge(s)).toBe(s);
   });
   it("mounts crash 5% before the finish", () => {
     expect(crashFinish("rocket", 0.94)).toBe("rocket");
