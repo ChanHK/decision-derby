@@ -93,9 +93,9 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
     // Surfer crouch on the hoverboard, carving side to side.
     const c = s(t * 3);
     return {
-      y: -20 + 3 * s(t * 5), body: 4 * c, neck: -8 + 5 * c, head: 4 - 3 * c, ear: -25, blink,
-      fnU: -22 - 4 * c, fnL: 34, ffU: -14 - 4 * c, ffL: 28,
-      hnU: 24 + 4 * c, hnL: -40, hfU: 16 + 4 * c, hfL: -32,
+      y: -14 + 3 * s(t * 5), body: 4 * c, neck: -8 + 5 * c, head: 4 - 3 * c, ear: -25, blink,
+      fnU: -30 - 4 * c, fnL: 50, ffU: -22 - 4 * c, ffL: 44,
+      hnU: 34 + 4 * c, hnL: -56, hfU: 26 + 4 * c, hfL: -48,
       t1: 50 + 10 * s(t * 4), t2: 12 * s(t * 4 + 1), t3: 14 * s(t * 4 + 2),
     };
   }
@@ -275,7 +275,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <Limb id="hf" color={color} far ink={ink} refs={refs} front={false} />
           <Limb id="ff" color={color} far ink={ink} refs={refs} front />
           {/* ACME rocket sits between the far and near legs so the horse straddles it */}
-          {anim === "rocket" && <image href={rocketArt} x={-112} y={-4} width={240} height={120} />}
+          {anim === "rocket" && <image href={rocketArt} x={-112} y={-24} width={240} height={120} />}
           {/* tail chain */}
           <g ref={R("t1")}>
             <path d="M0 0 Q-10 8 -4 20 Q4 12 6 2 Z" fill={mane} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
