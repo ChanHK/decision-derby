@@ -132,3 +132,42 @@ export function bipedDone(myX: number, targetX: number): boolean {
 export function draftBoost(gapAhead: number): number {
   return gapAhead > 30 && gapAhead < 140 ? 1.18 : 1;
 }
+
+/* ---------------- Race Director ---------------- */
+export type DirectorPhase = "setup" | "rubber" | "finish";
+/** Progress thresholds for the director's three acts. */
+export const RUBBER_AT = 0.4;
+export const CHAOS_FINISH_AT = 0.85;
+export const CRASH_AT = 0.95;
+/** Rubber-band triggers when 1st-to-last gap exceeds this share of the screen width. */
+export const RUBBER_GAP = 0.15;
+/** Speed multiplier for the underdog panic run. */
+export const PANIC_SPEED = 2.5;
+export const CURSE_LINES = ["Let me overthink this...", "Wait, are we sure?"];
+export const PANIC_LINES = ["DEADLINE PANIC!", "I HAVE MADE MY CHOICE!"];
+
+export function directorPhase(progress: number): DirectorPhase {
+  if (progress < RUBBER_AT) return "setup";
+  if (progress < CHAOS_FINISH_AT) return "rubber";
+  return "finish";
+}
+export function rubberBandActive(leaderX: number, lastX: number, screenWidth: number): boolean {
+  return leaderX - lastX > screenWidth * RUBBER_GAP;
+}
+export function leaderCurse(rand: () => number): HorseState { return rand() < 0.5 ? "nap" : "ufo"; }
+export function underdogPanic(rand: () => number): HorseState { return rand() < 0.5 ? "biped" : "rocket"; }
+export function midPackChaos(rand: () => number): HorseState {
+  const list: HorseState[] = ["drunk", "moonwalk", "wrongway"];
+  return list[Math.floor(rand() * list.length)] ?? "drunk";
+}
+/** Final stretch: stalls/gags are purged so everyone sprints; mounts and crashes stay. */
+export function finishPurge(state: HorseState): HorseState {
+  return state === "rocket" || state === "skate" || state === "exploded" || state === "wiped" ? state : "normal";
+}
+/** Mounts still being ridden 5% before the line must crash. */
+export function crashFinish(state: HorseState, progress: number): HorseState {
+  if (progress < CRASH_AT) return state;
+  if (state === "rocket") return "exploded";
+  if (state === "skate") return "wiped";
+  return state;
+}
