@@ -386,6 +386,10 @@ function Index() {
                 <HorseActor h={h} i={i} phase={phase} />
               </div>
             ))}
+            {/* one spotlight per horse during the countdown */}
+            {phase === "countdown" && choices.map((_, i) => (
+              <div key={`spot-${i}`} className="lane-spot pointer-events-none absolute z-[35]" style={{ left: START - 30, top: 116 + i * 150 - 40, width: 260, height: 190 }} />
+            ))}
           </div>
           {/* parallax layer 4: blurred foreground rail whips past at 1.5x */}
           <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 }} />
