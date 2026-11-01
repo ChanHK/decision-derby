@@ -295,17 +295,21 @@ function Index() {
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
         const dir = h.reverse && PANIC_POOL.includes(h.state) ? -1 : 1;
         h.x = Math.max(START - 40, h.x + v * dir * dt);
-        if (h.x >= FINISH) {
-          // climax: the first nose over the line freezes everyone else
+        if (h.x >= FINISH && h.finish === undefined) {
+          // every horse runs through the line; rankings come from finish order
           h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false; h.reverse = false;
-          soundRef.current?.syncRace([], false);
-          soundRef.current?.play("victory");
-          const fin = [i, ...hs.map((_, k) => k).filter((k) => k !== i).sort((a, b) => hs[b]!.x - hs[a]!.x)];
-          setOrder(fin);
-          setHorses(hs.map((x) => ({ ...x })));
-          setPhase("climax");
-          return;
+          if (!hs.some((o, k) => k !== i && o.finish !== undefined)) soundRef.current?.play("victory");
         }
+        if (h.finish !== undefined) h.x = Math.min(TRACK - 320, h.x);
+      }
+      if (hs.every((h) => h.finish !== undefined)) {
+        // all horses are home: rank by finish time, then celebrate
+        soundRef.current?.syncRace([], false);
+        const fin = hs.map((_, k) => k).sort((a, b) => hs[a]!.finish! - hs[b]!.finish!);
+        setOrder(fin);
+        setHorses(hs.map((x) => ({ ...x })));
+        setPhase("climax");
+        return;
       }
       soundRef.current?.syncRace(hs.map((h) => h.state), true);
       setHorses(hs.map((h) => ({ ...h })));
