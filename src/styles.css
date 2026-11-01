@@ -249,3 +249,18 @@ body { font-family: var(--font-sans); }
 .gate-wheel { background: radial-gradient(circle, oklch(0.8 0.01 250) 25%, oklch(0.3 0.01 250) 30%); }
 .gate-badge { box-shadow: 0 3px 0 oklch(0.25 0.03 60); }
 .gate-door { background: linear-gradient(90deg, oklch(0.75 0.17 60), oklch(0.88 0.15 85) 45%, oklch(0.62 0.16 50)); box-shadow: 3px 3px 0 oklch(0.25 0.03 60 / 0.6), inset 0 0 0 3px oklch(1 0 0 / 0.25); transition: transform 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+
+/* gadgets & crashes */
+@keyframes fx-rumble { 0%,100% { transform: translate(0,0) } 50% { transform: translate(-2px,2px) } }
+.fx-rumble { animation: fx-rumble .08s linear infinite; }
+@keyframes fx-flame { 0%,100% { transform: rotate(-90deg) scale(1) } 50% { transform: rotate(-90deg) scale(1.35) } }
+.fx-flame { animation: fx-flame .15s linear infinite; }
+@keyframes fx-hover { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
+.fx-hover { animation: fx-hover .5s ease-in-out infinite; }
+@keyframes fx-boom { 0% { transform: scale(.2); opacity: 1 } 60% { transform: scale(1.6); opacity: 1 } 100% { transform: scale(2); opacity: 0 } }
+.fx-boom { animation: fx-boom .7s ease-out forwards; }
+@keyframes fx-smoke { 0% { transform: translateY(0) scale(.6); opacity: .8 } 100% { transform: translateY(-30px) scale(1.3); opacity: 0 } }
+.fx-smoke { animation: fx-smoke 1.4s ease-out infinite; }
+@keyframes fx-abduct { 0%,100% { transform: translateY(-34px) rotate(-6deg) } 50% { transform: translateY(-46px) rotate(6deg) } }
+.fx-abduct { animation: fx-abduct .6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .fx-rumble, .fx-flame, .fx-hover, .fx-smoke, .fx-abduct { animation: none; } }
