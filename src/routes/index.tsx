@@ -376,7 +376,7 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
     <div className="relative">
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
         <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={h.bruised} />
+          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} />
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
