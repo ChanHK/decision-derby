@@ -104,6 +104,7 @@ function Index() {
     if (valid.length < 2) return;
     setChoices(valid);
     followRef.current = true; setFollowing(true); autoCam.current = 0;
+    zoomRef.current = 1; setZoom(1); setCamX(0);
     const deck = [...PERSONALITIES].sort(() => Math.random() - 0.5);
     hRef.current = valid.map((_, i) => {
       const personality = deck[i] ?? PERSONALITIES[0];
@@ -129,10 +130,11 @@ function Index() {
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
   }, [phase, maxCam]);
 
+  // tension start: red lights stack up one by one (horses locked in idle), green = gates burst
   useEffect(() => {
     if (phase !== "countdown") return;
     if (count === 0) { const id = setTimeout(() => setPhase("race"), 600); return () => clearTimeout(id); }
-    const id = setTimeout(() => setCount((c) => c - 1), 800);
+    const id = setTimeout(() => setCount((c) => c - 1), 750);
     return () => clearTimeout(id);
   }, [phase, count]);
 
