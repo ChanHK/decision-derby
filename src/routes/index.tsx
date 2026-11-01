@@ -267,7 +267,7 @@ function Index() {
         <aside className="tote w-40 sm:w-56 shrink-0 self-start p-2">
           <div className="font-display text-center text-accent text-lg h-[52px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
-            const h = horses[i]; const rank = ranks.indexOf(i); const done = order.includes(i);
+            const h = horses[i]; const rank = ranks.indexOf(i); const done = phase === "climax" ? order[0] === i : order.includes(i);
             return (
               <div key={i} className="h-[150px] flex items-center">
                 <div className="tote-row w-full p-2">
@@ -277,7 +277,7 @@ function Index() {
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-1">
                     <span className={`font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
-                    {h && phase === "race" && !done && (
+                    {h && (phase === "race" || phase === "climax") && !done && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
                       </span>
