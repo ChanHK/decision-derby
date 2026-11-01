@@ -39,7 +39,7 @@ function Index() {
   const [count, setCount] = useState(3);
   const [horses, setHorses] = useState<H[]>([]);
   const [following, setFollowing] = useState(true);
-  const [soundOn, setSoundOn] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
   const followRef = useRef(true);
   const autoCam = useRef(0);
   const soundRef = useRef<RaceSound | null>(null);
@@ -100,6 +100,7 @@ function Index() {
 
   function start() {
     if (valid.length < 2) return;
+    soundRef.current?.setEnabled(soundOn);
     setChoices(valid);
     followRef.current = true; setFollowing(true); autoCam.current = 0;
     setCamX(0);
