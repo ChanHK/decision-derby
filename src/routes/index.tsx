@@ -27,7 +27,7 @@ const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
