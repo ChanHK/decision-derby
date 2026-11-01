@@ -10,12 +10,16 @@ import detonation from "@/assets/race-detonation.mp3.asset.json";
 import decision from "@/assets/race-decision.mp3.asset.json";
 import rocket from "@/assets/race-rocket.mp3.asset.json";
 import scuba from "@/assets/race-scuba.mp3.asset.json";
+import biped from "@/assets/race-biped.mp3.asset.json";
+import copter from "@/assets/race-copter.mp3.asset.json";
+import jet from "@/assets/race-jet.mp3.asset.json";
+import lunge from "@/assets/race-lunge.mp3.asset.json";
 
-export type Clip = "launch" | "tone3" | "tone2" | "tone1" | "go" | "hoofbeats" | "ufo" | "detonation" | "decision" | "rocket" | "scuba";
+export type Clip = "launch" | "tone3" | "tone2" | "tone1" | "go" | "hoofbeats" | "ufo" | "detonation" | "decision" | "rocket" | "scuba" | "biped" | "copter" | "jet" | "lunge";
 const CLIPS: Record<Clip, string> = {
   launch: launch.url, tone3: tone3.url, tone2: tone2.url, tone1: tone1.url, go: go.url,
   hoofbeats: hoofbeats.url, ufo: ufo.url, detonation: detonation.url, decision: decision.url,
-  rocket: rocket.url, scuba: scuba.url,
+  rocket: rocket.url, scuba: scuba.url, biped: biped.url, copter: copter.url, jet: jet.url, lunge: lunge.url,
 };
 
 /** Only replacement uploads; constructed without touching browser APIs until a user gesture. */
@@ -93,6 +97,9 @@ export class RaceSound {
     if (sound === "exploded") void this.playClip("detonation");
     if (sound === "rocket") void this.playClip("rocket", { volume: 0.7 });
     if (sound === "scuba") void this.playClip("scuba", { volume: 0.7 });
+    if (sound === "biped") void this.playClip("biped", { volume: 0.7 });
+    if (sound === "copter") void this.playClip("copter", { volume: 0.7 });
+    if (sound === "jet") void this.playClip("jet", { volume: 0.7 });
     if (sound === "victory") void this.playClip("decision");
   }
 
