@@ -101,8 +101,13 @@ describe("gadget picks", () => {
   it("court lunge snaps three times", () => {
     expect(durationFor("lunge") / LUNGE_EVERY).toBeCloseTo(3);
   });
-  it("mid-pack can pick gadgets", () => {
-    expect(mp(() => 0)).toBe("rocket");
-    expect(mp(() => 0.25)).toBe("skate");
+  it("mid-pack can pick any of the 8 boosts, not just rocket/hoverboard", () => {
+    const seq = (vals: number[]) => { let k = 0; return () => vals[k++]!; };
+    expect(mp(seq([0.1, 0.4]))).toBe("jet");
+    expect(mp(seq([0.1, 0.99]))).toBe("lunge");
+    expect(mp(seq([0.9, 0.5]))).toBe("moonwalk");
+  });
+  it("never repeats the previous boost", () => {
+    for (let r = 0; r < 1; r += 0.05) expect(up(() => r, "rocket")).not.toBe("rocket");
   });
 });

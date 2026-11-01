@@ -7,7 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -31,7 +31,7 @@ const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "climax" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number; lastBoost?: HorseState };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -170,8 +170,10 @@ function Index() {
           } else if (act === "rubber" && rubber) {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
-            else if (h === lastH) { s = underdogPanic(Math.random); line = SELF_SPEED.includes(s) ? STATE_INFO[s].bubble : pick(PANIC_LINES); h.panic = true; h.lungeAt = t + 0.2; }
-            else if (rank >= 1 && Math.random() < 0.5) s = midPackChaos(Math.random);
+            else if (h === lastH) { s = underdogPanic(Math.random, h.lastBoost); line = SELF_SPEED.includes(s) ? STATE_INFO[s].bubble : pick(PANIC_LINES); h.panic = true; }
+            else if (rank >= 1 && Math.random() < 0.5) { s = midPackChaos(Math.random, h.lastBoost); if (SELF_SPEED.includes(s)) line = STATE_INFO[s].bubble; }
+            if (PANIC_POOL.includes(s)) h.lastBoost = s;
+            if (s === "lunge") h.lungeAt = t + 0.2;
             h.state = s; h.line = line;
             h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
             if (s !== "normal") { soundRef.current?.play(s); if (s === "glassdoor") punchShake(); }
@@ -384,6 +386,11 @@ function Index() {
                 <HorseActor h={h} i={i} phase={phase} />
               </div>
             ))}
+            {/* one spotlight per horse during the countdown */}
+            {phase === "countdown" && <div className="pointer-events-none absolute inset-0 z-[25] bg-ink/55" />}
+            {phase === "countdown" && choices.map((_, i) => (
+              <div key={`spot-${i}`} className="lane-spot pointer-events-none absolute z-[35]" style={{ left: START - 30, top: 116 + i * 150 - 40, width: 260, height: 190 }} />
+            ))}
           </div>
           {/* parallax layer 4: blurred foreground rail whips past at 1.5x */}
           <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 }} />
@@ -397,8 +404,6 @@ function Index() {
           )}
           {phase === "countdown" && (
             <div className="absolute top-0 bottom-0 z-[100] pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
-              {/* dim the track, spotlight the starting line */}
-              <div className="spotlight absolute inset-0" />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 <div className="flex gap-3 rounded-2xl border-[4px] border-ink bg-ink/80 px-5 py-4">
                   {[3, 2, 1].map((n) => (

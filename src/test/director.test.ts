@@ -23,8 +23,8 @@ describe("race director", () => {
     expect(underdogPanic(() => 0.1)).toBe("biped");
     expect(underdogPanic(() => 0.2)).toBe("rocket");
   });
-  it("mid-pack chaos is drunk, moonwalk or wrong way", () => {
-    expect(["drunk", "moonwalk", "wrongway"]).toContain(midPackChaos(() => 0.5));
+  it("mid-pack chaos gags are drunk, moonwalk or wrong way", () => {
+    expect(["drunk", "moonwalk", "wrongway"]).toContain(midPackChaos(() => 0.6));
   });
   it("final stretch purges sleep, UFO and drunk but keeps mounts", () => {
     expect(finishPurge("nap")).toBe("normal");

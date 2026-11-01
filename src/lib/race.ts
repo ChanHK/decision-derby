@@ -198,12 +198,16 @@ export function rubberBandActive(leaderX: number, lastX: number, screenWidth: nu
 export function leaderCurse(rand: () => number): HorseState {
   return LEADER_CURSES[Math.min(LEADER_CURSES.length - 1, Math.floor(rand() * LEADER_CURSES.length))]!;
 }
-export function underdogPanic(rand: () => number): HorseState {
-  return PANIC_POOL[Math.min(PANIC_POOL.length - 1, Math.floor(rand() * PANIC_POOL.length))]!;
+/** Equal pick from all 8 boosts; never repeats the horse's previous boost. */
+export function underdogPanic(rand: () => number, previous?: HorseState): HorseState {
+  const pool = PANIC_POOL.filter((s) => s !== previous);
+  return pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))]!;
 }
-export function midPackChaos(rand: () => number): HorseState {
-  const list: HorseState[] = ["rocket", "skate", "drunk", "moonwalk", "wrongway"];
-  return list[Math.floor(rand() * list.length)] ?? "drunk";
+/** Mid-pack: half the time any of the 8 boosts, otherwise a silly gag. */
+export function midPackChaos(rand: () => number, previous?: HorseState): HorseState {
+  if (rand() < 0.5) return underdogPanic(rand, previous);
+  const gags: HorseState[] = ["drunk", "moonwalk", "wrongway"];
+  return gags[Math.min(gags.length - 1, Math.floor(rand() * gags.length))]!;
 }
 /** Final stretch: stalls/gags are purged so everyone sprints; mounts and crashes stay. */
 export function finishPurge(state: HorseState): HorseState {
