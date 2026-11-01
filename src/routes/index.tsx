@@ -7,7 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, shouldBump, draftBoost, RIVAL_LINES, type HorseState } from "@/lib/race";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, draftBoost, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -172,26 +172,8 @@ function Index() {
             h.next = t + (s === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(s));
           }
         }
-        // rivalry: bump neighbours, draft behind rivals
-        if (t > (h.bumpCd ?? 0) && (h.state === "normal" || h.state === "turbo" || h.state === "skate")) {
-          for (let j = 0; j < hRef.current.length; j++) {
-            const o = hRef.current[j];
-            if (!o || o.finish !== undefined || j === i) continue;
-            if (shouldBump(o.x - h.x, Math.abs(j - i), Math.random)) {
-              const victim = o.x < h.x ? o : h; const bully = victim === o ? h : o;
-              victim.state = "bumped"; victim.next = t + durationFor("bumped");
-              bully.line = RIVAL_LINES[Math.floor(Math.random() * RIVAL_LINES.length)];
-              victim.line = undefined;
-              bully.bumpCd = t + 2.5; victim.bumpCd = t + 2.5;
-              soundRef.current?.play("stumble");
-              break;
-            }
-          }
-          if (h.bumpCd === undefined || t > h.bumpCd) h.bumpCd = t + 0.4;
-        }
         const ahead = Math.min(...unfinished.filter((u) => u.x > h.x).map((u) => u.x - h.x), 9999);
         const draft = h.state === "normal" ? draftBoost(ahead) : 1;
-        if (h.line && t > (h.bumpCd ?? 0) - 1.5) h.line = undefined;
         if (h.state === "exploded") h.burnt = true;
         if (h.state === "wiped") h.bruised = true;
         h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * draft * dt);
@@ -257,7 +239,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", bumped: "bg-primary text-primary-foreground", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
@@ -386,34 +368,67 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = phase === "race" && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" || st === "ufo" ? "idle" : st === "rocket" ? "jump" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
-  const wrap = st === "ufo" ? "fx-abduct" : st === "bumped" ? "horse-wobble" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
+  const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
     <div className="relative">
-      {st === "rocket" && <div className="absolute -left-16 top-[70px] w-[330px] fx-rumble"><img src={rocketArt} alt="" width={1152} height={576} className="w-full" /><span className="absolute -left-14 top-[38%] text-5xl fx-flame">🔥</span></div>}
-      {st === "skate" && <img src={hoverArt} alt="" width={1152} height={576} className="absolute left-0 top-[105px] w-[220px] fx-hover" />}
-      <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "translateY(-22px) rotate(-6deg)" : st === "skate" ? "translateY(-28px)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-        <Horse color={COATS[i]!} state={vis} anim={anim} />
+      <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
+        <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
+          <Horse color={COATS[i]!} state={vis} anim={anim} />
+        </div>
       </div>
-      {st === "exploded" && <span className="absolute left-[40px] top-[20px] text-7xl fx-boom">💥</span>}
-      {st === "exploded" && <span className="absolute left-[10px] top-[80px] text-4xl fx-dust">💨</span>}
-      {st === "wiped" && <><span className="absolute left-[10px] top-[120px] text-3xl" style={{ transform: "rotate(-30deg)" }}>🛹</span><span className="absolute left-[150px] top-[110px] text-2xl fx-dust">⚡</span></>}
+      {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
+      {st === "exploded" && <RocketBurst />}
+      {st === "wiped" && <BoardBreak />}
       {h.burnt && <><span className="absolute left-[70px] top-[0px] text-2xl fx-smoke">💨</span><span className="absolute left-[130px] top-[10px] text-xl fx-smoke" style={{ animationDelay: ".7s" }}>💨</span></>}
       {h.bruised && <><span className="absolute left-[150px] top-[30px] text-2xl">🩹</span><span className="absolute left-[70px] top-[70px] text-xl" style={{ transform: "rotate(25deg)" }}>🩹</span><span className="absolute left-[165px] top-[14px] text-lg fx-float">🤕</span></>}
       {st === "stumble" && <span className="absolute left-[150px] top-[120px] text-2xl fx-dust">💨</span>}
       {st === "graze" && <span className="absolute left-[170px] top-[60px] text-2xl fx-float">🦋</span>}
       {st === "nap" && <span className="absolute left-[150px] -top-2 text-2xl fx-float">💤</span>}
       {st === "moonwalk" && <span className="absolute -left-6 top-[90px] text-2xl">✨</span>}
-                        {st === "skate" && <span className="absolute left-[140px] top-[30px] text-2xl">🕶️</span>}
       {st === "ufo" && <span className="absolute left-[60px] -top-16 text-5xl fx-float">🛸</span>}
       {st === "ufo" && <span className="absolute left-[50px] -top-4 h-[180px] w-[110px] rounded-b-full bg-accent/30 pointer-events-none" style={{ clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)" }} />}
-      {st === "bumped" && <span className="absolute left-[120px] top-[40px] text-3xl">💢</span>}
       {st === "wrongway" && <span className="absolute left-[170px] top-6 text-3xl fx-float">❓</span>}
       {bubble && (
         <span className="absolute -top-3 left-[110px] whitespace-nowrap rounded-full border-[3px] border-ink bg-card px-2 font-display text-sm text-ink">{bubble}</span>
       )}
+    </div>
+  );
+}
+
+/** Rocket blows apart: hull pieces fly off, a cartoon smoke cloud pops, the horse is flung and lands flat. */
+function RocketBurst() {
+  const pieces = [
+    { clip: "inset(0 0 0 68%)", dx: "220px", dy: "-160px", rot: "320deg" },
+    { clip: "inset(0 34% 0 32%)", dx: "40px", dy: "-220px", rot: "-200deg" },
+    { clip: "inset(0 66% 0 0)", dx: "-200px", dy: "-120px", rot: "-340deg" },
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {pieces.map((p, k) => (
+        <img key={k} src={rocketArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[36px] w-[240px]"
+          style={{ clipPath: p.clip, ["--dx" as string]: p.dx, ["--dy" as string]: p.dy, ["--rot" as string]: p.rot }} />
+      ))}
+      <svg viewBox="0 0 200 140" className="fx-boom absolute left-[-20px] top-[-10px] w-[240px] overflow-visible">
+        <path d="M30 90 Q10 70 34 56 Q30 28 62 34 Q74 8 104 24 Q130 6 146 34 Q182 30 172 62 Q196 80 168 98 Q166 122 132 112 Q112 132 86 114 Q54 128 48 104 Q22 110 30 90 Z"
+          fill="var(--card)" stroke="var(--ink)" strokeWidth="4" strokeLinejoin="round" />
+        <text x="100" y="82" textAnchor="middle" fontSize="30" fontWeight="900" fill="var(--ink)" fontFamily="var(--font-display, inherit)">KA-BOOM!</text>
+      </svg>
+    </div>
+  );
+}
+
+/** Hoverboard snaps in half: the two halves spin away with a CRACK. */
+function BoardBreak() {
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      <img src={hoverArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[74px] w-[224px]"
+        style={{ clipPath: "inset(0 50% 0 0)", ["--dx" as string]: "-120px", ["--dy" as string]: "40px", ["--rot" as string]: "-120deg" }} />
+      <img src={hoverArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[74px] w-[224px]"
+        style={{ clipPath: "inset(0 0 0 50%)", ["--dx" as string]: "140px", ["--dy" as string]: "30px", ["--rot" as string]: "150deg" }} />
+      <span className="fx-boom absolute left-[70px] top-[60px] font-display text-3xl text-ink" style={{ WebkitTextStroke: "1px var(--card)" }}>CRACK!</span>
     </div>
   );
 }

@@ -64,14 +64,8 @@ describe("competitive rules", () => {
   });
 });
 
-import { shouldBump, draftBoost } from "@/lib/race";
+import { draftBoost } from "@/lib/race";
 describe("rivalry", () => {
-  it("bumps only neighbouring lanes within range", () => {
-    expect(shouldBump(20, 1, () => 0.1)).toBe(true);
-    expect(shouldBump(20, 2, () => 0.1)).toBe(false);
-    expect(shouldBump(80, 1, () => 0.1)).toBe(true);
-    expect(shouldBump(100, 1, () => 0.1)).toBe(false);
-  });
   it("drafts only a short way behind a rival", () => {
     expect(draftBoost(80)).toBeGreaterThan(1);
     expect(draftBoost(300)).toBe(1);
