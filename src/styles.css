@@ -236,8 +236,8 @@ body { font-family: var(--font-sans); }
   .tote-line, .tote-compact .tote-line { margin-top: 0; flex: 0 0 auto; }
   .tote-name, .tote-compact .tote-name { font-size: 0.75rem; line-height: 1.15; }
   .tote-badge, .tote-compact .tote-badge { height: 1.1rem; width: 1.1rem; font-size: 0.62rem; border-width: 2px; border-radius: 0.3rem; }
-  .tote-rank, .tote-compact .tote-rank { font-size: 0.85rem; }
-  .tote-chip { display: none; }
+  .tote-rank, .tote-compact .tote-rank { font-size: 0.85rem; width: auto; padding-inline: 0.25rem; }
+  .tote-chip, .tote-done { display: none; }
 }
 /* A long list of choices has to stay on one screen: the rows tighten up. */
 .setup-rows { display: grid; gap: 0.75rem; }

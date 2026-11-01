@@ -418,7 +418,7 @@ function Index() {
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
                       </span>
                     )}
-                    {done && <span className="text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink bg-accent text-ink">🏁 Finished</span>}
+                    {done && <span className="tote-done text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink bg-accent text-ink">🏁 Finished</span>}
                   </div>
                 </div>
               </div>
