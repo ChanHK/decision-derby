@@ -384,7 +384,6 @@ function Index() {
   });
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
-  const SUF = ["st", "nd", "rd", "th", "th"];
   const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground", timeout: "bg-muted text-ink", standby: "bg-secondary text-ink", smash: "bg-accent text-ink", glassdoor: "bg-primary text-primary-foreground", soup: "bg-secondary text-ink", tactile: "bg-accent text-ink", jet: "bg-accent text-ink", scuba: "bg-secondary text-ink", laksa: "bg-primary text-primary-foreground", copter: "bg-accent text-ink", lunge: "bg-accent text-ink" };
   const raceScreen = (
     <main className="h-full min-h-0 grass-bg flex flex-col overflow-hidden">
@@ -400,7 +399,7 @@ function Index() {
       </header>
       <div className="flex flex-1 min-h-0 px-1 pb-1 sm:px-2 sm:pb-4 gap-2 sm:gap-3">
         {/* tote board: choice labels beside the lanes */}
-        <aside className="tote w-32 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto flex flex-col p-1.5 sm:p-2">
+        <aside className={`tote ${choices.length > 5 ? "tote-compact" : ""} w-32 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto flex flex-col p-1.5 sm:p-2`}>
 
           <div className="tote-head font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
@@ -413,7 +412,7 @@ function Index() {
                     <div className="font-bold truncate flex-1">{c}</div>
                   </div>
                   <div className="tote-line mt-2 flex items-center justify-between gap-1">
-                    <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
+                    <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? ordinal(rank) : "—"}</span>
                     {h && (phase === "race" || phase === "climax") && !done && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
