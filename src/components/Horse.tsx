@@ -193,8 +193,8 @@ function Limb({ id, color, far, ink, refs, front }: {
   );
 }
 
-export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size = 200 }: {
-  color: string; mane?: string; state?: HorseState; anim: HorseAnim; size?: number;
+export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size = 200, bruised = false }: {
+  color: string; mane?: string; state?: HorseState; anim: HorseAnim; size?: number; bruised?: boolean;
 }) {
   const refs = useRef<Partial<Record<Bone, SVGGElement | null>>>({});
   const rootRef = useRef<SVGGElement | null>(null);
