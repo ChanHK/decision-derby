@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { HorseState } from "@/lib/race";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "jump" | "sleep";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -19,6 +19,14 @@ function legGallop(p: number, off: number, front: boolean): [number, number] {
   const w = TAU * (p + off);
   const upper = -32 * s(w);
   const lower = front ? 10 + 55 * Math.max(0, s(w + 1.2)) : -8 - 50 * Math.max(0, s(w - 1.2));
+  return [upper, lower];
+}
+/** Full-power stride: big reach plus deep knee/hock tuck during the swing phase. */
+function legSprint(p: number, off: number, front: boolean): [number, number] {
+  const w = TAU * (p + off);
+  const upper = -50 * s(w) + (front ? -8 : 6);
+  const tuck = Math.max(0, s(w + (front ? 1.0 : -1.0)));
+  const lower = front ? 6 + 110 * tuck : -6 - 95 * tuck;
   return [upper, lower];
 }
 function legWalk(p: number, off: number, front: boolean): [number, number] {
@@ -47,6 +55,18 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
       fnU: -55 * arc, fnL: 100 * arc, ffU: -45 * arc, ffL: 95 * arc,
       hnU: 35 * arc, hnL: -10 * arc, hfU: 42 * arc, hfL: -14 * arc,
       t1: 30 + 10 * arc, t2: 15, t3: 10, ear: -20, blink,
+    };
+  }
+  if (anim === "sprint") {
+    const w = TAU * p;
+    const [fnU, fnL] = legSprint(p, 0.5, true);
+    const [ffU, ffL] = legSprint(p, 0.58, true);
+    const [hnU, hnL] = legSprint(p, 0, false);
+    const [hfU, hfL] = legSprint(p, 0.08, false);
+    return {
+      y: -12 * Math.max(0, s(w + 0.4)), body: -8 + 7 * s(w), neck: -22 + 6 * s(w + 0.6), head: -8 + 5 * s(w + 1),
+      fnU, fnL, ffU, ffL, hnU, hnL, hfU, hfL,
+      t1: 78 + 6 * s(w * 2), t2: 8 * s(w * 2 + 0.8), t3: 12 * s(w * 2 + 1.6), ear: -45, blink,
     };
   }
   if (anim === "gallop") {
@@ -127,7 +147,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
   animRef.current = anim;
   useEffect(() => {
     // Turbo boost triggers a jump/leap
-    if (state === "turbo" && stateRef.current !== "turbo" && anim === "gallop") jumpStart.current = performance.now();
+    if (state === "turbo" && stateRef.current !== "turbo" && (anim === "gallop" || anim === "sprint")) jumpStart.current = performance.now();
     stateRef.current = state;
   }, [state, anim]);
   useEffect(() => {
@@ -140,7 +160,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       const a = animRef.current, st = stateRef.current;
-      const rate = a === "gallop" ? (st === "turbo" ? 3.6 : st === "tired" ? 1.3 : 2.3) : a === "walk" ? 1 : 0;
+      const rate = a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
       let j = -1;
       if (jumpStart.current >= 0) {
@@ -157,7 +177,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           pose[k] = (pose[k] ?? fallback) * (1 - sleepBlend.current) + (sleeping[k] ?? fallback) * sleepBlend.current;
         }
       }
-      const drunk = st === "drunk" && a === "gallop";
+      const drunk = st === "drunk" && (a === "gallop" || a === "sprint");
       const tired = st === "tired" && a === "gallop";
       const extra: Partial<Record<Bone, number>> = drunk
         ? { body: 10 * s(now / 210), neck: 22 * s(now / 260), head: 28 * s(now / 190 + 1), ear: 35 * s(now / 120),
@@ -265,7 +285,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           {[0, 1, 2].map((i) => <text key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.45}s` }} x={156 + i * 12} y={76 - i * 12}>Z</text>)}
         </g>
       )}
-      {state === "drunk" && anim === "gallop" && (
+      {state === "drunk" && (anim === "gallop" || anim === "sprint") && (
         <g>
           {[0, 1, 2].map((i) => (
             <circle key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.5}s` }} cx={150 + i * 6} cy="20" r={4 + i * 2} fill="var(--gate)" stroke={ink} strokeWidth="1.5" opacity="0.85" />
@@ -273,7 +293,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <text className="fx-bubble" x="160" y="10" fontSize="14" fontWeight="900" fill={ink}>hic!</text>
         </g>
       )}
-      {state === "turbo" && anim === "gallop" && (
+      {state === "turbo" && (anim === "gallop" || anim === "sprint") && (
         <g className="fx-flame">
           {[0, 1, 2].map((i) => (
             <path key={i} d={`M${40 - i * 18} ${70 + i * 18} L${-10 - i * 14} ${66 + i * 18} L${-30 - i * 10} ${74 + i * 18} L${-6 - i * 14} ${80 + i * 18} Z`}
@@ -281,7 +301,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           ))}
         </g>
       )}
-      {anim === "gallop" && state !== "tired" && (
+      {(anim === "gallop" || anim === "sprint") && state !== "tired" && (
         <g className="fx-dust">
           <circle cx="40" cy="128" r="7" fill="var(--track-dust)" />
           <circle cx="26" cy="124" r="5" fill="var(--track-dust)" />
