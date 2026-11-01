@@ -26,7 +26,7 @@ export class RaceSound {
     if (!this.enabled || !ctx || ctx.state !== "running") return;
     const notes: Partial<Record<Sound, number[]>> = {
       moonwalk: [440, 330, 392, 294], wrongway: [650, 480, 310],
-      stumble: [300, 180, 110], graze: [520, 600, 520, 600], nap: [220, 165, 130],
+      stumble: [300, 180, 110], graze: [520, 600, 520, 600], nap: [220, 165, 130], biped: [392, 494, 392, 494, 587],
       victory: [523, 659, 784, 1047, 784, 1047],
     };
     const melody = notes[sound];
