@@ -4,7 +4,7 @@ import { Horse } from "@/components/Horse";
 import { Button } from "@/components/ui/button";
 import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, durationFor, forwardCamera, randomState, speedFor, type HorseState } from "@/lib/race";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, durationFor, rollBiped, forwardCamera, randomState, speedFor, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,7 +26,7 @@ const FINISH = 2200;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -137,7 +137,16 @@ function Index() {
         }
         const prog = (h.x - START) / (FINISH - START);
         const leading = h.x === leaderX && prog >= 0.08 && unfinished.length > 1;
-        if (t > h.next) {
+        const isLast = unfinished.length > 1 && h.x === Math.min(...unfinished.map((u) => u.x));
+        const chased = h.chase !== undefined ? hRef.current[h.chase] : undefined;
+        if (h.state === "biped" && (!chased || chased.finish !== undefined || bipedDone(h.x, chased.x))) {
+          h.state = "winded"; h.chase = undefined; h.next = t + 2.2;
+        } else if (h.state === "biped") {
+          // keep running until it passes the horse it is chasing
+        } else if (t > h.next && h.state === "normal" && rollBiped(Math.random, isLast, prog)) {
+          const ahead = unfinished.filter((u) => u.x > h.x).sort((a, b) => a.x - b.x)[0];
+          if (ahead) { h.state = "biped"; h.chase = hRef.current.indexOf(ahead); h.next = t + 99; soundRef.current?.play("biped"); }
+        } else if (t > h.next) {
           if (h.state !== "normal") {
             const next = leading && h.state === "turbo" ? randomState(Math.random, true, "turbo") : "normal";
             h.state = next;
@@ -154,7 +163,7 @@ function Index() {
           }
         }
         h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * dt);
-        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; if (!fin.length) soundRef.current?.play("victory"); fin.push(i); }
+        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; h.chase = undefined; if (!fin.length) soundRef.current?.play("victory"); fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
       const lead = Math.min(FINISH + 400, Math.max(...hRef.current.map((h) => h.x)));
@@ -216,7 +225,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
@@ -355,7 +364,7 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = phase === "race" && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "nap" ? "sleep" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" ? "sleep" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? STATE_INFO[st].bubble : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;

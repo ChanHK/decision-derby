@@ -199,7 +199,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       const a = animRef.current, st = stateRef.current;
-      const rate = a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
+      const rate = a === "biped" ? 3.6 : a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" || st === "winded" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
       let j = -1;
       if (jumpStart.current >= 0) {
