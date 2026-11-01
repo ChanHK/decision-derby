@@ -11,6 +11,6 @@
 - [x] Winner popup always on top.
 
 # Replacement audio
-- [ ] Replace old clips and synthesized cues with the six new uploads only.
-- [ ] Stop UFO audio when its animation ends, including mute and race finish.
-- [ ] Test sound lifecycle and verify a full race.
+- [x] Replace old clips and synthesized cues with the six new uploads only.
+- [x] Stop UFO audio when its animation ends, including mute and race finish.
+- [x] Test sound lifecycle and verify a full race.
