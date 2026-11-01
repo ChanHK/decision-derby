@@ -253,8 +253,14 @@ body { font-family: var(--font-sans); }
 /* gadgets & crashes */
 @keyframes fx-rumble { 0%,100% { transform: translate(0,0) } 50% { transform: translate(-2px,2px) } }
 .fx-rumble { animation: fx-rumble .08s linear infinite; }
-@keyframes fx-flame { 0%,100% { transform: rotate(-90deg) scale(1) } 50% { transform: rotate(-90deg) scale(1.35) } }
-.fx-flame { animation: fx-flame .15s linear infinite; }
+@keyframes fx-launch { 0% { transform: translate(0,0) rotate(0) } 35% { transform: translate(-20px,-150px) rotate(-200deg) } 70% { transform: translate(-30px,0) rotate(-360deg) } 82% { transform: translate(-30px,-18px) rotate(-360deg) } 100% { transform: translate(-30px,0) rotate(-360deg) } }
+.fx-launch { animation: fx-launch 1.1s cubic-bezier(.3,.6,.5,1) forwards; transform-origin: 100px 90px; }
+@keyframes fx-tumble { 0% { transform: translate(0,0) rotate(0) } 30% { transform: translate(30px,-50px) rotate(50deg) } 60% { transform: translate(50px,0) rotate(90deg) } 80% { transform: translate(55px,-8px) rotate(20deg) } 100% { transform: translate(55px,0) rotate(0) } }
+.fx-tumble { animation: fx-tumble .9s ease-out forwards; transform-origin: 100px 120px; }
+@keyframes fx-debris { 0% { transform: translate(0,0) rotate(0); opacity: 1 } 80% { opacity: 1 } 100% { transform: translate(var(--dx),var(--dy)) rotate(var(--rot)); opacity: 0 } }
+.fx-debris { animation: fx-debris 1.1s cubic-bezier(.2,.7,.4,1) forwards; }
+@keyframes fx-speedline { 0% { transform: translateX(40px); opacity: 0 } 30% { opacity: .9 } 100% { transform: translateX(-60px); opacity: 0 } }
+.fx-speedline { animation: fx-speedline .35s linear infinite; border: 2px solid var(--ink); }
 @keyframes fx-hover { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
 .fx-hover { animation: fx-hover .5s ease-in-out infinite; }
 @keyframes fx-boom { 0% { transform: scale(.2); opacity: 1 } 60% { transform: scale(1.6); opacity: 1 } 100% { transform: scale(2); opacity: 0 } }
@@ -263,4 +269,4 @@ body { font-family: var(--font-sans); }
 .fx-smoke { animation: fx-smoke 1.4s ease-out infinite; }
 @keyframes fx-abduct { 0%,100% { transform: translateY(-34px) rotate(-6deg) } 50% { transform: translateY(-46px) rotate(6deg) } }
 .fx-abduct { animation: fx-abduct .6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .fx-rumble, .fx-flame, .fx-hover, .fx-smoke, .fx-abduct { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fx-rumble, .fx-hover, .fx-launch, .fx-tumble, .fx-debris, .fx-speedline, .fx-smoke, .fx-abduct { animation: none; } }
