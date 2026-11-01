@@ -1,4 +1,4 @@
-export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded" | "rocket" | "ufo" | "skate" | "exploded" | "wiped";
+export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded" | "rocket" | "ufo" | "skate" | "exploded" | "wiped" | "timeout" | "standby" | "smash" | "glassdoor" | "soup" | "tactile";
 
 export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubble?: string }> = {
   normal: { label: "Gallop", emoji: "🐎" },
@@ -18,6 +18,23 @@ export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubb
   skate: { label: "Hoverboard", emoji: "🛹", bubble: "RADICAL!" },
   exploded: { label: "KA-BOOM!", emoji: "💥", bubble: "...ow." },
   wiped: { label: "Board snapped!", emoji: "🤕", bubble: "My face!!" },
+  timeout: { label: "System crash", emoji: "⏳", bubble: "504 Gateway Timeout..." },
+  standby: { label: "Standby list", emoji: "⌚", bubble: "Waiting on ID90 clearance..." },
+  smash: { label: "Jump smash", emoji: "🏸", bubble: "SMASH!" },
+  glassdoor: { label: "Glass door!", emoji: "🚪", bubble: "Who cleaned that glass?!" },
+  soup: { label: "Soup break", emoji: "🍲", bubble: "Wait, this broth is actually incredible." },
+  tactile: { label: "Squishy toy", emoji: "🫧", bubble: "So squishy..." },
+};
+
+/** The six Leader's Curse penalties: each halts the runaway leader with a puppet-rig gag. */
+export const LEADER_CURSES: HorseState[] = ["timeout", "standby", "smash", "glassdoor", "soup", "tactile"];
+export const CURSE_BUBBLES: Partial<Record<HorseState, string[]>> = {
+  timeout: ["504 Gateway Timeout...", "Who pushed to main?"],
+  standby: ["Waiting on ID90 clearance...", "Still on the standby list!"],
+  smash: ["SMASH!", "Right on the line!"],
+  glassdoor: ["Who cleaned that glass?!"],
+  soup: ["Wait, this broth is actually incredible."],
+  tactile: ["So squishy...", "Must keep pressing..."],
 };
 
 /** Progress (0..1) after which horses enter the final sprint. */
@@ -49,6 +66,8 @@ export function speedFor(state: HorseState, t: number, base: number, progress = 
     case "ufo": return base * 0.05;
     case "skate": return base * 1.6 * sprint;
     case "exploded": return 0;
+    case "timeout": case "standby": case "smash": case "glassdoor": case "tactile": return 0;
+    case "soup": return base * 0.12;
     case "wiped": return base * 0.1;
     case "zoomies": return base * (1.2 + Math.sin(t * 9) * 1.1);
     default: return base * sprint;
@@ -79,6 +98,8 @@ export function forwardCamera(current: number, target: number, maximum: number):
 /** Seconds a special status lasts before the horse snaps back to normal. */
 export function durationFor(state: HorseState): number {
   if (state === "ufo") return 2.2;
+  if (state === "smash") return 3;
+  if (state === "timeout" || state === "standby" || state === "glassdoor" || state === "soup" || state === "tactile") return 2.6;
   if (state === "exploded") return 2;
   if (state === "wiped") return 1.6;
   if (state === "rocket") return 1.6;
@@ -154,7 +175,9 @@ export function directorPhase(progress: number): DirectorPhase {
 export function rubberBandActive(leaderX: number, lastX: number, screenWidth: number): boolean {
   return leaderX - lastX > screenWidth * RUBBER_GAP;
 }
-export function leaderCurse(rand: () => number): HorseState { return rand() < 0.5 ? "nap" : "ufo"; }
+export function leaderCurse(rand: () => number): HorseState {
+  return LEADER_CURSES[Math.min(LEADER_CURSES.length - 1, Math.floor(rand() * LEADER_CURSES.length))]!;
+}
 export function underdogPanic(rand: () => number): HorseState {
   const r = rand();
   return r < 0.34 ? "biped" : r < 0.67 ? "rocket" : "skate";
