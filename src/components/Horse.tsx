@@ -32,7 +32,7 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
   const blink = (t % 3.2) < 0.12 ? 0.1 : 1;
   if (anim === "sleep") {
     return {
-      y: 35, breathe: 1 + 0.035 * s(t * 2), body: 5,
+      y: 23, breathe: 1 + 0.035 * s(t * 2), body: 5,
       neck: 52, head: 20, ear: 50, blink: 0.05,
       fnU: -75, fnL: 125, ffU: -70, ffL: 120,
       hnU: 75, hnL: -120, hfU: 70, hfL: -115,
