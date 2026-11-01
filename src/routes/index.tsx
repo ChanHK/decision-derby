@@ -328,21 +328,12 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // climax: winner walks forward at 150%, losers stay frozen, then the podium appears
+  // climax: every horse has crossed the line; hold the scene, then the podium appears
   useEffect(() => {
     if (phase !== "climax") return;
-    let raf = 0; let last = performance.now();
-    const w = order[0];
-    const step = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      const h = w !== undefined ? hRef.current[w] : undefined;
-      if (h) { h.x = Math.min(TRACK - 320, h.x + 60 * dt); setHorses(hRef.current.map((x) => ({ ...x }))); }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
     const id = setTimeout(() => setPhase("done"), 3200);
-    return () => { cancelAnimationFrame(raf); clearTimeout(id); };
-  }, [phase, order]);
+    return () => clearTimeout(id);
+  }, [phase]);
 
   const setupScreen = (
     <main className="h-full grass-bg flex p-4">
