@@ -390,7 +390,8 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = (phase === "race" || phase === "climax") && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const curse = st === "timeout" || st === "standby" || st === "smash" || st === "glassdoor" || st === "soup" || st === "tactile";
+  const anim = curse ? st : st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
@@ -398,7 +399,9 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
     <div className={`relative ${frozen ? "fx-frozen" : ""}`} style={champ ? { transform: "scale(1.5)", transformOrigin: "50% 100%", transition: "transform .4s ease-out" } : undefined}>
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
         <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
+          <div style={{ transform: st === "timeout" ? "perspective(700px) rotateX(78deg)" : undefined, transformOrigin: "50% 92%", transition: "transform 1.1s ease-in" }}>
+            <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
+          </div>
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
