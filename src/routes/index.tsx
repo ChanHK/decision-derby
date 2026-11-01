@@ -7,7 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, shouldBump, draftBoost, RIVAL_LINES, type HorseState } from "@/lib/race";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, draftBoost, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -172,26 +172,8 @@ function Index() {
             h.next = t + (s === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(s));
           }
         }
-        // rivalry: bump neighbours, draft behind rivals
-        if (t > (h.bumpCd ?? 0) && (h.state === "normal" || h.state === "turbo" || h.state === "skate")) {
-          for (let j = 0; j < hRef.current.length; j++) {
-            const o = hRef.current[j];
-            if (!o || o.finish !== undefined || j === i) continue;
-            if (shouldBump(o.x - h.x, Math.abs(j - i), Math.random)) {
-              const victim = o.x < h.x ? o : h; const bully = victim === o ? h : o;
-              victim.state = "bumped"; victim.next = t + durationFor("bumped");
-              bully.line = RIVAL_LINES[Math.floor(Math.random() * RIVAL_LINES.length)];
-              victim.line = undefined;
-              bully.bumpCd = t + 2.5; victim.bumpCd = t + 2.5;
-              soundRef.current?.play("stumble");
-              break;
-            }
-          }
-          if (h.bumpCd === undefined || t > h.bumpCd) h.bumpCd = t + 0.4;
-        }
         const ahead = Math.min(...unfinished.filter((u) => u.x > h.x).map((u) => u.x - h.x), 9999);
         const draft = h.state === "normal" ? draftBoost(ahead) : 1;
-        if (h.line && t > (h.bumpCd ?? 0) - 1.5) h.line = undefined;
         if (h.state === "exploded") h.burnt = true;
         if (h.state === "wiped") h.bruised = true;
         h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * draft * dt);
@@ -257,7 +239,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", bumped: "bg-primary text-primary-foreground", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
@@ -388,7 +370,7 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
   const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" || st === "ufo" ? "idle" : st === "rocket" ? "jump" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
-  const wrap = st === "ufo" ? "fx-abduct" : st === "bumped" ? "horse-wobble" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
+  const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
     <div className="relative">
@@ -409,7 +391,6 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
                         {st === "skate" && <span className="absolute left-[140px] top-[30px] text-2xl">🕶️</span>}
       {st === "ufo" && <span className="absolute left-[60px] -top-16 text-5xl fx-float">🛸</span>}
       {st === "ufo" && <span className="absolute left-[50px] -top-4 h-[180px] w-[110px] rounded-b-full bg-accent/30 pointer-events-none" style={{ clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)" }} />}
-      {st === "bumped" && <span className="absolute left-[120px] top-[40px] text-3xl">💢</span>}
       {st === "wrongway" && <span className="absolute left-[170px] top-6 text-3xl fx-float">❓</span>}
       {bubble && (
         <span className="absolute -top-3 left-[110px] whitespace-nowrap rounded-full border-[3px] border-ink bg-card px-2 font-display text-sm text-ink">{bubble}</span>
