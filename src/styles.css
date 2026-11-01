@@ -381,11 +381,16 @@ body { font-family: var(--font-sans); }
   .setup-card { padding: 0.75rem 1rem; }
   .setup-title { font-size: 1.9rem; }
   .setup-lead { display: none; }
-  .setup-rows { margin-top: 0.75rem; }
-  .setup-rows > * + * { margin-top: 0.4rem; }
+  .setup-rows { margin-top: 0.75rem; gap: 0.4rem; }
+  .setup-rows-compact { gap: 0.3rem; }
   .setup-row input { padding: 0.25rem 0.6rem; font-size: 0.95rem; }
   .setup-add { margin-top: 0.5rem; padding: 0.3rem; font-size: 0.9rem; }
   .setup-start { margin-top: 0.75rem; padding: 0.45rem; font-size: 1.25rem; }
+}
+
+/* A sideways phone has width to spare and no height: the choices go two abreast. */
+@media (max-height: 620px) and (min-width: 620px) {
+  .setup-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* The results card has to keep its buttons on screen when the phone is sideways. */
