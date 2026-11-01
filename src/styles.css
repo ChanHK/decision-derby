@@ -105,6 +105,11 @@
   --horse-3: oklch(0.35 0.04 40);
   --horse-4: oklch(0.75 0.13 70);
   --horse-5: oklch(0.6 0.03 260);
+  --horse-6: oklch(0.62 0.16 350);
+  --horse-7: oklch(0.72 0.15 110);
+  --horse-8: oklch(0.5 0.14 230);
+  --horse-9: oklch(0.45 0.12 305);
+  --horse-10: oklch(0.83 0.09 75);
   --accent-foreground: oklch(0.208 0.042 265.755);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
@@ -211,6 +216,17 @@ body { font-family: var(--font-sans); }
   repeating-conic-gradient(from 150deg at 50% 0, var(--gold) 0 60deg, transparent 0 360deg) 14px 0/28px 18px; }
 .tote { background: linear-gradient(var(--board), var(--board-2)); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 5px 5px 0 var(--ink); color: var(--gate); }
 .tote-row { background: oklch(0.18 0.04 150); border: 2px solid oklch(0.4 0.06 150); border-radius: .6rem; }
+/* A full field: the board shares its height across ten rows instead of one lane each. */
+.tote-compact .tote-head { height: 3rem; font-size: 1rem; }
+.tote-compact .tote-slot { height: auto; min-height: 3rem; flex: 1 1 0; overflow: hidden; }
+.tote-compact .tote-row { padding: 0.3rem 0.5rem; }
+.tote-compact .tote-line { margin-top: 0.2rem; }
+.tote-compact .tote-badge { height: 1.5rem; width: 1.5rem; font-size: 0.8rem; border-radius: 0.35rem; }
+.tote-compact .tote-rank { font-size: 1.15rem; }
+/* A long list of choices reads better in two columns. */
+.setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.setup-grid > * + * { margin-top: 0; }
+@media (max-width: 560px) { .setup-grid { grid-template-columns: 1fr; } }
 .fx-spin { animation: fxspin .7s linear infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes fxspin { to { transform: rotate(360deg) } }
 .fx-orbit { animation: fxspin 1.2s linear infinite; }

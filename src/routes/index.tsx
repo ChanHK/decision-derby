@@ -458,13 +458,14 @@ function Index() {
           {(phase === "race" || phase === "climax") && (
             <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
               <div className="font-display text-[11px] tracking-widest text-accent mb-1">LIVE STANDINGS</div>
-              {ranks.map((hi, r) => (
+              {ranks.slice(0, 5).map((hi, r) => (
                 <div key={hi} className="flex items-center gap-1.5 text-xs font-bold text-gate leading-5">
                   <span className="w-4">{r + 1}.</span>
                   <span className="h-3 w-3 rounded-full border border-ink shrink-0" style={{ background: COATS[hi] }} />
                   <span className="truncate">{choices[hi]}</span>
                 </div>
               ))}
+              {ranks.length > 5 && <div className="text-[11px] font-bold text-gate/80 leading-5">…and {ranks.length - 5} more</div>}
             </div>
           )}
           <div className="relative" style={{ width: TRACK, height: 116 + choices.length * 150 + 26 }}>
