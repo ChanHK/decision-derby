@@ -408,7 +408,7 @@ function RocketBurst() {
   return (
     <div className="pointer-events-none absolute inset-0">
       {pieces.map((p, k) => (
-        <img key={k} src={rocketArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[60px] w-[240px]"
+        <img key={k} src={rocketArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[36px] w-[240px]"
           style={{ clipPath: p.clip, ["--dx" as string]: p.dx, ["--dy" as string]: p.dy, ["--rot" as string]: p.rot }} />
       ))}
       <svg viewBox="0 0 200 140" className="fx-boom absolute left-[-20px] top-[-10px] w-[240px] overflow-visible">
@@ -424,9 +424,9 @@ function RocketBurst() {
 function BoardBreak() {
   return (
     <div className="pointer-events-none absolute inset-0">
-      <img src={hoverArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[68px] w-[224px]"
+      <img src={hoverArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[74px] w-[224px]"
         style={{ clipPath: "inset(0 50% 0 0)", ["--dx" as string]: "-120px", ["--dy" as string]: "40px", ["--rot" as string]: "-120deg" }} />
-      <img src={hoverArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[68px] w-[224px]"
+      <img src={hoverArt} alt="" width={1152} height={576} className="fx-debris absolute left-[-12px] top-[74px] w-[224px]"
         style={{ clipPath: "inset(0 0 0 50%)", ["--dx" as string]: "140px", ["--dy" as string]: "30px", ["--rot" as string]: "150deg" }} />
       <span className="fx-boom absolute left-[70px] top-[60px] font-display text-3xl text-ink" style={{ WebkitTextStroke: "1px var(--card)" }}>CRACK!</span>
     </div>
