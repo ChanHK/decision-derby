@@ -431,7 +431,7 @@ function Index() {
         <div className="relative h-7 rounded-full border-[3px] border-ink bg-board/90 mx-1" aria-label="Race progress map">
           <span className="absolute right-1 top-1/2 -translate-y-1/2 text-sm">🏁</span>
           {horses.map((h, i) => (
-            <span key={i} className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-ink transition-[left] duration-100"
+            <span key={i} className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-ink"
               style={{ left: `calc(${Math.min(1, Math.max(0, (h.x - START) / (FINISH - START))) * 96}% + 4px)`, background: COATS[i] }} />
           ))}
         </div>
