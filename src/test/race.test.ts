@@ -111,3 +111,13 @@ describe("gadget picks", () => {
     for (let r = 0; r < 1; r += 0.05) expect(up(() => r, "rocket")).not.toBe("rocket");
   });
 });
+
+import { GADGET_POOL, chaserState as cs, randomState as rs, RUSH_STATES } from "@/lib/race";
+describe("unified gadget pool", () => {
+  it("chaser and random rolls can hand out any of the 8 gadgets", () => {
+    const seq = (v: number[]) => { let k = 0; return () => v[k++]!; };
+    expect(cs(seq([0.4, 0.99]))).toBe("lunge");
+    expect(rs(seq([0.5, 0.4]), false)).toBe("jet");
+    for (const g of GADGET_POOL) expect(RUSH_STATES).toContain(g);
+  });
+});

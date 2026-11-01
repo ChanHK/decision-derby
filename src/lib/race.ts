@@ -31,8 +31,10 @@ export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubb
   lunge: { label: "Court lunge", emoji: "🏸", bubble: "Footwork is everything!" },
 };
 
-/** Underdog comeback boosts (picked evenly). */
-export const PANIC_POOL: HorseState[] = ["biped", "rocket", "skate", "jet", "scuba", "laksa", "copter", "lunge"];
+/** The one shared gadget pool: every pool that hands out a gadget picks evenly from these 8. */
+export const GADGET_POOL: HorseState[] = ["biped", "rocket", "skate", "jet", "scuba", "laksa", "copter", "lunge"];
+export const PANIC_POOL = GADGET_POOL;
+const pickGadget = (rand: () => number) => GADGET_POOL[Math.min(GADGET_POOL.length - 1, Math.floor(rand() * GADGET_POOL.length))]!;
 /** Boosts that move by their own speed instead of the flat panic multiplier. */
 export const SELF_SPEED: HorseState[] = ["jet", "scuba", "laksa", "copter", "lunge"];
 /** Court lunge: seconds per lunge and how far each snap jumps (share of screen width). */
@@ -104,7 +106,8 @@ export function randomState(rand: () => number = Math.random, leading = false, p
     return "normal";
   }
   if (r < 0.45) return "normal";
-  const specials: HorseState[] = ["turbo", "drunk", "tired", "moonwalk", "wrongway", "stumble", "graze", "nap", "zoomies", "rocket", "skate", "ufo"];
+  if (r < 0.65) return pickGadget(rand);
+  const specials: HorseState[] = ["turbo", "drunk", "tired", "moonwalk", "wrongway", "stumble", "graze", "nap", "zoomies", "ufo"];
   return specials[Math.floor(rand() * specials.length)] ?? "normal";
 }
 
@@ -134,7 +137,7 @@ export function durationFor(state: HorseState): number {
 export const BIPED_CHANCE = 0.8;
 
 /** Rush states that burn a horse out when they end. */
-export const RUSH_STATES: HorseState[] = ["turbo", "zoomies", "biped", "rocket", "skate"];
+export const RUSH_STATES: HorseState[] = ["turbo", "zoomies", ...GADGET_POOL];
 /** Chance a horse crashes into a comic mishap right after a rush. */
 export const BURNOUT_CHANCE = 0.75;
 export const BURNOUTS: HorseState[] = ["graze", "nap", "wrongway", "moonwalk", "stumble", "tired"];
@@ -152,8 +155,7 @@ export function burnoutState(rand: () => number, previous: HorseState): HorseSta
 export function chaserState(rand: () => number): HorseState {
   const r = rand();
   if (r < 0.3) return "turbo";
-  if (r < 0.45) return "rocket";
-  if (r < 0.58) return "skate";
+  if (r < 0.58) return pickGadget(rand);
   if (r < 0.68) return "zoomies";
   if (r < 0.78) return "drunk";
   return "normal";
