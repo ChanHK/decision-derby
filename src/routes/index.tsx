@@ -7,7 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -31,7 +31,7 @@ const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "climax" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number; lastBoost?: HorseState };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -170,8 +170,10 @@ function Index() {
           } else if (act === "rubber" && rubber) {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
-            else if (h === lastH) { s = underdogPanic(Math.random); line = SELF_SPEED.includes(s) ? STATE_INFO[s].bubble : pick(PANIC_LINES); h.panic = true; h.lungeAt = t + 0.2; }
-            else if (rank >= 1 && Math.random() < 0.5) s = midPackChaos(Math.random);
+            else if (h === lastH) { s = underdogPanic(Math.random, h.lastBoost); line = SELF_SPEED.includes(s) ? STATE_INFO[s].bubble : pick(PANIC_LINES); h.panic = true; }
+            else if (rank >= 1 && Math.random() < 0.5) { s = midPackChaos(Math.random, h.lastBoost); if (SELF_SPEED.includes(s)) line = STATE_INFO[s].bubble; }
+            if (PANIC_POOL.includes(s)) h.lastBoost = s;
+            if (s === "lunge") h.lungeAt = t + 0.2;
             h.state = s; h.line = line;
             h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
             if (s !== "normal") { soundRef.current?.play(s); if (s === "glassdoor") punchShake(); }
