@@ -63,3 +63,16 @@ describe("competitive rules", () => {
     expect(chaserState(() => 0.2)).toBe("turbo");
   });
 });
+
+import { shouldBump, draftBoost } from "@/lib/race";
+describe("rivalry", () => {
+  it("bumps only neighbouring lanes within range", () => {
+    expect(shouldBump(20, 1, () => 0.1)).toBe(true);
+    expect(shouldBump(20, 2, () => 0.1)).toBe(false);
+    expect(shouldBump(80, 1, () => 0.1)).toBe(false);
+  });
+  it("drafts only a short way behind a rival", () => {
+    expect(draftBoost(80)).toBeGreaterThan(1);
+    expect(draftBoost(300)).toBe(1);
+  });
+});

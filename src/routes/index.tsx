@@ -5,7 +5,7 @@ import { StartingGate } from "@/components/StartingGate";
 import { Button } from "@/components/ui/button";
 import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, type HorseState } from "@/lib/race";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, shouldBump, draftBoost, RIVAL_LINES, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,7 +27,7 @@ const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -91,7 +91,7 @@ function Index() {
     const deck = [...PERSONALITIES].sort(() => Math.random() - 0.5);
     hRef.current = valid.map((_, i) => {
       const personality = deck[i] ?? PERSONALITIES[0];
-      return { x: START, state: "normal", next: 3 + Math.random() * 3, base: (personality?.base ?? 170) + Math.random() * 12 - 6, kick: personality?.kick ?? 1.45 };
+      return { x: START, state: "normal", next: 0.6 + Math.random() * 0.6, base: (personality?.base ?? 170) + Math.random() * 12 - 6, kick: personality?.kick ?? 1.45 };
     });
     setHorses([...hRef.current]);
     setOrder([]);
@@ -159,7 +159,7 @@ function Index() {
             const crash = burnoutState(Math.random, h.state);
             const next = crash ?? "normal";
             h.state = next;
-            h.next = t + (next === "normal" ? 1.5 + Math.random() * 2 : durationFor(next));
+            h.next = t + (next === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(next));
             soundRef.current?.play(next);
           }
           else {
@@ -167,10 +167,30 @@ function Index() {
             if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
             h.state = s;
             soundRef.current?.play(s);
-            h.next = t + (s === "normal" ? 1.5 + Math.random() * 2 : durationFor(s));
+            h.next = t + (s === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(s));
           }
         }
-        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * dt);
+        // rivalry: bump neighbours, draft behind rivals
+        if (t > (h.bumpCd ?? 0) && (h.state === "normal" || h.state === "turbo" || h.state === "skate")) {
+          for (let j = 0; j < hRef.current.length; j++) {
+            const o = hRef.current[j];
+            if (!o || o.finish !== undefined || j === i) continue;
+            if (shouldBump(o.x - h.x, Math.abs(j - i), Math.random)) {
+              const victim = o.x < h.x ? o : h; const bully = victim === o ? h : o;
+              victim.state = "bumped"; victim.next = t + durationFor("bumped");
+              bully.line = RIVAL_LINES[Math.floor(Math.random() * RIVAL_LINES.length)];
+              victim.line = undefined;
+              bully.bumpCd = t + 2.5; victim.bumpCd = t + 2.5;
+              soundRef.current?.play("stumble");
+              break;
+            }
+          }
+          if (h.bumpCd === undefined || t > h.bumpCd) h.bumpCd = t + 0.4;
+        }
+        const ahead = Math.min(...unfinished.filter((u) => u.x > h.x).map((u) => u.x - h.x), 9999);
+        const draft = h.state === "normal" ? draftBoost(ahead) : 1;
+        if (h.line && t > (h.bumpCd ?? 0) - 1.5) h.line = undefined;
+        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * draft * dt);
         if (h.x >= FINISH) { h.finish = t; h.state = "normal"; h.chase = undefined; if (!fin.length) soundRef.current?.play("victory"); fin.push(i); }
       }
       setHorses(hRef.current.map((h) => ({ ...h })));
@@ -233,7 +253,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", bumped: "bg-primary text-primary-foreground" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
@@ -331,7 +351,7 @@ function Index() {
       </div>
 
       {phase === "done" && winner !== undefined && (
-        <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-20">
+        <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-[200]">
           <Confetti />
           <div className="cartoon-card relative w-full max-w-lg p-6 text-center">
             <div className="flex justify-end mb-2">{soundToggle}</div>
@@ -362,10 +382,10 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = phase === "race" && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" ? "sleep" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" ? "sleep" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" || st === "ufo" ? "idle" : st === "rocket" ? "sprint" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
-  const wrap = st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
-  const bubble = racing ? STATE_INFO[st].bubble : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
+  const wrap = st === "ufo" ? "fx-float" : st === "bumped" ? "horse-wobble" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
+  const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
     <div className="relative">
       <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
@@ -375,6 +395,13 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
       {st === "graze" && <span className="absolute left-[170px] top-[60px] text-2xl fx-float">🦋</span>}
       {st === "nap" && <span className="absolute left-[150px] -top-2 text-2xl fx-float">💤</span>}
       {st === "moonwalk" && <span className="absolute -left-6 top-[90px] text-2xl">✨</span>}
+      {st === "rocket" && <span className="absolute -left-10 top-[60px] text-4xl" style={{ transform: "rotate(-135deg)" }}>🚀</span>}
+      {st === "rocket" && <span className="absolute -left-20 top-[70px] text-3xl fx-dust">🔥</span>}
+      {st === "skate" && <span className="absolute left-[50px] top-[150px] text-5xl">🛹</span>}
+      {st === "skate" && <span className="absolute left-[140px] top-[30px] text-2xl">🕶️</span>}
+      {st === "ufo" && <span className="absolute left-[60px] -top-16 text-5xl fx-float">🛸</span>}
+      {st === "ufo" && <span className="absolute left-[50px] -top-4 h-[180px] w-[110px] rounded-b-full bg-accent/30 pointer-events-none" style={{ clipPath: "polygon(35% 0, 65% 0, 100% 100%, 0 100%)" }} />}
+      {st === "bumped" && <span className="absolute left-[120px] top-[40px] text-3xl">💢</span>}
       {st === "wrongway" && <span className="absolute left-[170px] top-6 text-3xl fx-float">❓</span>}
       {bubble && (
         <span className="absolute -top-3 left-[110px] whitespace-nowrap rounded-full border-[3px] border-ink bg-card px-2 font-display text-sm text-ink">{bubble}</span>
