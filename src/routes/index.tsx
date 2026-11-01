@@ -376,14 +376,13 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
     <div className="relative">
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
         <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-          <Horse color={COATS[i]!} state={vis} anim={anim} />
+          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} />
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
       {st === "exploded" && <RocketBurst />}
       {st === "wiped" && <BoardBreak />}
       {h.burnt && <><span className="absolute left-[70px] top-[0px] text-2xl fx-smoke">💨</span><span className="absolute left-[130px] top-[10px] text-xl fx-smoke" style={{ animationDelay: ".7s" }}>💨</span></>}
-      {h.bruised && <><span className="absolute left-[150px] top-[30px] text-2xl">🩹</span><span className="absolute left-[70px] top-[70px] text-xl" style={{ transform: "rotate(25deg)" }}>🩹</span><span className="absolute left-[165px] top-[14px] text-lg fx-float">🤕</span></>}
       {st === "stumble" && <span className="absolute left-[150px] top-[120px] text-2xl fx-dust">💨</span>}
       {st === "graze" && <span className="absolute left-[170px] top-[60px] text-2xl fx-float">🦋</span>}
       {st === "nap" && <span className="absolute left-[150px] -top-2 text-2xl fx-float">💤</span>}
