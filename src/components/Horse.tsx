@@ -3,7 +3,7 @@ import type { HorseState } from "@/lib/race";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped" | "rocket" | "surf";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped" | "rocket" | "surf" | "timeout" | "standby" | "smash" | "glassdoor" | "soup" | "tactile";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -11,7 +11,7 @@ type Bone =
   | "t1" | "t2" | "t3"
   | "fnU" | "fnL" | "ffU" | "ffL" | "hnU" | "hnL" | "hfU" | "hfL";
 
-type Pose = Partial<Record<Bone, number>> & { y?: number; breathe?: number; blink?: number };
+type Pose = Partial<Record<Bone, number>> & { y?: number; rot?: number; breathe?: number; blink?: number };
 
 const TAU = Math.PI * 2;
 const s = Math.sin;
@@ -38,8 +38,77 @@ function legWalk(p: number, off: number, front: boolean): [number, number] {
   return [upper, lower];
 }
 
-function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
+const ease = (k: number) => { const c = Math.max(0, Math.min(1, k)); return c * c * (3 - 2 * c); };
+const mix = (a: number, b: number, k: number) => a + (b - a) * ease(k);
+
+function solve(anim: HorseAnim, p: number, t: number, jump: number, since = 0): Pose {
   const blink = (t % 3.2) < 0.12 ? 0.1 : 1;
+  if (anim === "standby") {
+    // Rear up 45deg, hind legs planted vertical, far front leg hangs, near forearm bent to stare at a watch.
+    const tap = 4 * s(t * 5);
+    return {
+      y: -14, body: -45, neck: 34, head: 26, ear: 10, blink,
+      hnU: 45, hnL: 0, hfU: 45, hfL: 0,
+      ffU: 40, ffL: 10,
+      fnU: -55 + tap, fnL: -120,
+      t1: 30 + 8 * s(t * 2), t2: 8 * s(t * 2 + 1), t3: 10 * s(t * 2 + 2),
+    };
+  }
+  if (anim === "smash") {
+    // Leap, arch back, near front limb winds far over the head, then whips forward. Land and admire.
+    const air = 0.9;
+    if (since < air) {
+      const k = since / air;
+      const arm = k < 0.55 ? mix(0, 160, k / 0.55) : mix(160, -80, (k - 0.55) / 0.12);
+      const elbow = k < 0.55 ? mix(0, -50, k / 0.55) : mix(-50, 10, (k - 0.55) / 0.12);
+      return {
+        y: -70 * s(Math.PI * k), body: -20, neck: -18, head: -14, ear: -30, blink: 1,
+        fnU: arm, fnL: elbow, ffU: -20, ffL: 40, hnU: 30, hnL: -30, hfU: 20, hfL: -20,
+        t1: 60, t2: 12, t3: 14,
+      };
+    }
+    const land = Math.max(0, 1 - (since - air) / 0.18);
+    return {
+      y: 8 * land, body: -6 + 10 * land, neck: -10, head: -12, ear: -10, blink,
+      fnU: -80, fnL: 10, ffU: 4, ffL: 0, hnU: -4 + 20 * land, hnL: -20 * land, hfU: 4, hfL: 0,
+      t1: 40 + 20 * s(t * 6), t2: 12 * s(t * 6 + 1), t3: 14 * s(t * 6 + 2),
+    };
+  }
+  if (anim === "glassdoor") {
+    // Splat into the glass: neck snaps back, front knees buckle, then flung flat on the back.
+    const flip = (since - 0.25) / 0.45;
+    const lift = since > 0.25 && since < 0.7 ? -40 * s(Math.PI * flip) : 0;
+    const flail = since > 0.7 ? 10 * s(t * 14) : 0;
+    return {
+      y: lift + mix(0, -18, flip), rot: mix(0, -180, flip), body: 0,
+      neck: mix(0, -60, since / 0.1), head: -10, ear: 60, blink: 0.1,
+      fnU: mix(0, 110, since / 0.15) + flail, fnL: -40, ffU: mix(0, 110, since / 0.15) - flail, ffL: -40,
+      hnU: -30 + flail, hnL: 40, hfU: -20 - flail, hfL: 30,
+      t1: 10, t2: 10, t3: 10,
+    };
+  }
+  if (anim === "soup") {
+    // Hard brake with locked front legs, then head dips into the bowl and slurps.
+    const brake = since < 0.5;
+    const chew = 7 * s(t * 18);
+    return {
+      y: 0, body: brake ? -10 : 2, neck: brake ? -10 : mix(-10, 70, (since - 0.5) / 0.3), head: brake ? -6 : 25 + chew,
+      ear: 20 + 8 * s(t * 9), blink,
+      fnU: brake ? -32 : 4, fnL: 0, ffU: brake ? -26 : -4, ffL: 0,
+      hnU: brake ? 18 : -4, hnL: brake ? -30 : 0, hfU: brake ? 12 : 4, hfL: brake ? -24 : 0,
+      t1: 30 + 14 * s(t * 5), t2: 12 * s(t * 5 + 1), t3: 14 * s(t * 5 + 2),
+    };
+  }
+  if (anim === "tactile") {
+    // Sit like a dog and squish an invisible toy with both front hooves, head tilting entranced.
+    const sq = s(t * 6);
+    return {
+      y: 16, body: -30, neck: 30, head: 20 + 10 * s(t * 1.4), ear: 15 * s(t * 1.4), blink,
+      hnU: 70, hnL: -120, hfU: 66, hfL: -115,
+      fnU: -40 + 18 * sq, fnL: -50, ffU: -40 - 18 * sq, ffL: -50,
+      t1: 50 + 10 * s(t * 3), t2: 10 * s(t * 3 + 1), t3: 12 * s(t * 3 + 2),
+    };
+  }
   if (anim === "sleep") {
     return {
       y: 23, breathe: 1 + 0.035 * s(t * 2), body: 5,
@@ -204,6 +273,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
   const stateRef = useRef(state);
   const jumpStart = useRef<number>(-1);
   const sleepBlend = useRef(0);
+  const animStart = useRef({ anim, at: 0 });
 
   animRef.current = anim;
   const frozenRef = useRef(frozen);
@@ -224,6 +294,9 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       if (frozenRef.current) { raf = requestAnimationFrame(tick); return; } // locked mid-pose
       const a = animRef.current, st = stateRef.current;
+      if (animStart.current.anim !== a) animStart.current = { anim: a, at: now };
+      if (a === "timeout") { raf = requestAnimationFrame(tick); return; } // system crash: solver frozen mid-stride
+      const since = (now - animStart.current.at) / 1000;
       const rate = a === "biped" ? 3.6 : a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" || st === "winded" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
       let j = -1;
@@ -233,7 +306,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
       }
       const time = (now - t0) / 1000;
       sleepBlend.current += ((a === "sleep" ? 1 : 0) - sleepBlend.current) * Math.min(1, dt * 10);
-      const pose = solve(a === "sleep" ? "idle" : a, phase, time, a === "sleep" ? -1 : j);
+      const pose = solve(a === "sleep" ? "idle" : a, phase, time, a === "sleep" ? -1 : j, since);
       if (sleepBlend.current > 0.001) {
         const sleeping = solve("sleep", phase, time, -1);
         for (const k of [...Object.keys(PIVOT), "y", "breathe", "blink"] as (keyof Pose)[]) {
@@ -255,7 +328,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
       }
       const sway = drunk ? 9 * s(now / 330) : 0;
       const yy = (pose.y ?? 0) + (drunk ? 6 * s(now / 240) : 0);
-      rootRef.current?.setAttribute("transform", `translate(0 ${yy.toFixed(2)}) rotate(${sway.toFixed(2)} 100 120)`);
+      rootRef.current?.setAttribute("transform", `translate(0 ${yy.toFixed(2)}) rotate(${(sway + (pose.rot ?? 0)).toFixed(2)} 100 110)`);
       breatheRef.current?.setAttribute("transform", `scale(1 ${(pose.breathe ?? 1).toFixed(3)})`);
       eyeRef.current?.setAttribute("transform", `scale(1 ${pose.blink ?? 1})`);
       raf = requestAnimationFrame(tick);
@@ -353,6 +426,33 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <Limb id="fn" color={color} ink={ink} refs={refs} front />
         </g>
       </g>
+      {anim === "glassdoor" && (
+        <g transform="translate(196 70)">
+          <rect x="-4" y="-80" width="8" height="140" rx="3" fill="var(--fx-water)" stroke={ink} strokeWidth="2" opacity="0.55" />
+          <ellipse className="fx-ring" rx="34" ry="44" fill="none" stroke="var(--card)" strokeWidth="7" />
+          <g className="fx-dust">
+            <circle cx="-8" cy="56" r="8" fill="var(--track-dust)" />
+            <circle cx="10" cy="62" r="6" fill="var(--track-dust)" />
+            <circle cx="-22" cy="62" r="5" fill="var(--track-dust)" />
+          </g>
+        </g>
+      )}
+      {anim === "soup" && (
+        <g transform="translate(176 120)">
+          {[0, 1, 2].map((i) => <path key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.4}s` }} d={`M${-10 + i * 10} -12 q-5 -8 0 -16 q5 -8 0 -16`} fill="none" stroke="var(--card)" strokeWidth="3" strokeLinecap="round" opacity="0.85" />)}
+          <ellipse cx="0" cy="-6" rx="24" ry="6" fill="var(--soup)" stroke={ink} strokeWidth="2.5" />
+          <circle cx="-8" cy="-7" r="2.4" fill="var(--destructive)" /><circle cx="6" cy="-6" r="2" fill="var(--destructive)" /><circle cx="-1" cy="-8" r="1.6" fill={ink} />
+          <path d="M-26 -6 Q-24 14 0 14 Q24 14 26 -6 Z" fill="var(--card)" stroke={ink} strokeWidth="3" strokeLinejoin="round" />
+          <path d="M-18 2 L18 2" stroke="var(--destructive)" strokeWidth="2.5" strokeDasharray="4 3" />
+          {[0, 1].map((i) => <path key={i} className="fx-sweat" style={{ animationDelay: `${i * 0.5}s` }} d={`M${-40 - i * 12} -46 q-4 6 0 8 q4 -2 0 -8 z`} fill="var(--fx-water)" stroke={ink} strokeWidth="1.5" />)}
+        </g>
+      )}
+      {anim === "soup" && (
+        <g className="fx-dust">
+          <circle cx="150" cy="130" r="7" fill="var(--track-dust)" />
+          <circle cx="166" cy="126" r="5" fill="var(--track-dust)" />
+        </g>
+      )}
       {anim === "sleep" && (
         <g fill={ink} fontSize="15" fontWeight="900">
           {[0, 1, 2].map((i) => <text key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.45}s` }} x={156 + i * 12} y={76 - i * 12}>Z</text>)}

@@ -11,9 +11,13 @@ describe("race director", () => {
     expect(rubberBandActive(1150, 1000, 1000)).toBe(false);
     expect(rubberBandActive(1151, 1000, 1000)).toBe(true);
   });
-  it("curses the leader with sleep or UFO", () => {
-    expect(leaderCurse(() => 0.1)).toBe("nap");
-    expect(leaderCurse(() => 0.9)).toBe("ufo");
+  it("curses the leader with one of the six puppet penalties", () => {
+    expect(leaderCurse(() => 0)).toBe("timeout");
+    expect(leaderCurse(() => 0.2)).toBe("standby");
+    expect(leaderCurse(() => 0.4)).toBe("smash");
+    expect(leaderCurse(() => 0.55)).toBe("glassdoor");
+    expect(leaderCurse(() => 0.7)).toBe("soup");
+    expect(leaderCurse(() => 0.99)).toBe("tactile");
   });
   it("panics the underdog into two legs or a rocket", () => {
     expect(underdogPanic(() => 0.1)).toBe("biped");

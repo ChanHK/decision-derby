@@ -7,7 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -157,7 +157,7 @@ function Index() {
             if (crash !== "normal") soundRef.current?.play(crash);
           } else if (act === "rubber" && rubber) {
             let s: HorseState = "normal"; let line: string | undefined;
-            if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_LINES); }
+            if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
             else if (h === lastH) { s = underdogPanic(Math.random); line = pick(PANIC_LINES); h.panic = true; }
             else if (rank >= 1 && Math.random() < 0.5) s = midPackChaos(Math.random);
             h.state = s; h.line = line;
@@ -251,7 +251,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground", timeout: "bg-muted text-ink", standby: "bg-secondary text-ink", smash: "bg-accent text-ink", glassdoor: "bg-primary text-primary-foreground", soup: "bg-secondary text-ink", tactile: "bg-accent text-ink" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
@@ -390,7 +390,8 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = (phase === "race" || phase === "climax") && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const curse = st === "timeout" || st === "standby" || st === "smash" || st === "glassdoor" || st === "soup" || st === "tactile";
+  const anim = curse ? st : st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
@@ -398,10 +399,13 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
     <div className={`relative ${frozen ? "fx-frozen" : ""}`} style={champ ? { transform: "scale(1.5)", transformOrigin: "50% 100%", transition: "transform .4s ease-out" } : undefined}>
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
         <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
+          <div style={{ transform: st === "timeout" ? "perspective(700px) rotateX(78deg)" : undefined, transformOrigin: "50% 92%", transition: "transform 1.1s ease-in" }}>
+            <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
+          </div>
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
+      {st === "timeout" && <span className="fx-spin absolute left-[150px] top-[10px] h-9 w-9 rounded-full border-[5px] border-ink/20 border-t-ink" />}
       {st === "exploded" && <RocketBurst />}
       {st === "wiped" && <BoardBreak />}
       {h.burnt && <><span className="absolute left-[70px] top-[0px] text-2xl fx-smoke">💨</span><span className="absolute left-[130px] top-[10px] text-xl fx-smoke" style={{ animationDelay: ".7s" }}>💨</span></>}
