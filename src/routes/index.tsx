@@ -21,8 +21,8 @@ export const Route = createFileRoute("/")({
 });
 
 const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)"];
-const TRACK = 3300; // world px
-const FINISH = 2200;
+const TRACK = 4700; // world px
+const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "done";
@@ -325,7 +325,7 @@ function Index() {
             ))}
           </div>
           {phase === "countdown" && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="sticky left-0 top-0 -mt-[100%] h-full w-full z-[100] flex items-center justify-center pointer-events-none" style={{ position: "absolute", left: viewRef.current?.scrollLeft ?? 0 }}>
               <span key={count} className="font-display text-9xl text-accent countdown-pop drop-shadow">{count || "GO!"}</span>
             </div>
           )}
