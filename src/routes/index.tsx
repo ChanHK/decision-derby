@@ -7,7 +7,9 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, draftBoost, type HorseState } from "@/lib/race";
+import { CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+
+const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,8 +30,8 @@ const TRACK = 4700; // world px
 const FINISH = 3600;
 const START = 120;
 
-type Phase = "setup" | "pan" | "countdown" | "race" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean };
+type Phase = "setup" | "pan" | "countdown" | "race" | "climax" | "done";
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -124,78 +126,86 @@ function Index() {
 
   useEffect(() => {
     if (phase !== "race") return;
-    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = []; let doneAt = -1;
+    let raf = 0; let last = performance.now(); let t = 0; let camR = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-      const unfinished = hRef.current.filter((h) => h.finish === undefined);
-      const leaderX = Math.max(...unfinished.map((h) => h.x));
-      for (let i = 0; i < hRef.current.length; i++) {
-        const h = hRef.current[i];
-        if (!h) continue;
-        if (h.finish !== undefined) {
-          // victory lap: coast into the winner's circle and slow to a stop
-          const room = Math.max(0, TRACK - 260 - h.x);
-          h.x += Math.min(h.base * 1.4, room * 2) * dt;
-          continue;
-        }
+      const hs = hRef.current;
+      const ranked = [...hs].sort((a, b) => b.x - a.x);
+      const leader = ranked[0]!, lastH = ranked[ranked.length - 1]!;
+      const rubber = rubberBandActive(leader.x, lastH.x, vw);
+      for (let i = 0; i < hs.length; i++) {
+        const h = hs[i]!;
         const prog = (h.x - START) / (FINISH - START);
-        const leading = h.x === leaderX && prog >= 0.08 && unfinished.length > 1;
-        const isLast = unfinished.length > 1 && h.x === Math.min(...unfinished.map((u) => u.x));
-        const chased = h.chase !== undefined ? hRef.current[h.chase] : undefined;
-        if (h.state === "biped" && (!chased || chased.finish !== undefined || bipedDone(h.x, chased.x))) {
-          // the comeback burns it out too
-          const crash = burnoutState(Math.random, "biped");
-          h.state = crash ?? "winded"; h.chase = undefined; h.next = t + (crash ? durationFor(crash) : 2.2);
-          soundRef.current?.play(h.state);
-        } else if (h.state === "biped") {
-          // keep running until it passes the horse it is chasing
-        } else if (isLast && h.state === "normal" && t > (h.bipedAt ?? 0) && rollBiped(Math.random, isLast, prog)) {
-          const aheadList = unfinished.filter((u) => u.x > h.x).sort((a, b) => a.x - b.x);
-          const ahead = aheadList[Math.min(1, aheadList.length - 1)]; // overtake two horses
-          if (ahead) { h.state = "biped"; h.chase = hRef.current.indexOf(ahead); h.next = t + 99; soundRef.current?.play("biped"); }
-          else h.bipedAt = t + 1;
-        } else if (isLast && h.state === "normal" && t > (h.bipedAt ?? 0)) {
-          h.bipedAt = t + 1; // desperate horse re-checks every second
+        const act = directorPhase(prog);
+        const rank = ranked.indexOf(h);
+        if (act === "finish") {
+          const purged = crashFinish(finishPurge(h.state), prog);
+          if (purged !== h.state) {
+            const crashed = purged === "exploded" || purged === "wiped";
+            h.state = purged; h.line = undefined; h.panic = false;
+            h.next = t + (crashed ? 99 : 0); // crashes slide all the way over the line
+            if (crashed) soundRef.current?.play(purged);
+          }
         } else if (t > h.next) {
           if (h.state !== "normal") {
-            const crash = burnoutState(Math.random, h.state);
-            const next = crash ?? "normal";
-            h.state = next;
-            h.next = t + (next === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(next));
-            soundRef.current?.play(next);
-          }
-          else {
-            let s = leading ? randomState(Math.random, true) : chaserState(Math.random);
-            if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
-            h.state = s;
-            soundRef.current?.play(s);
-            h.next = t + (s === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(s));
+            // states expire; ridden mounts still blow up mid-race
+            const crash = h.state === "rocket" ? "exploded" : h.state === "skate" ? "wiped" : "normal";
+            h.state = crash; h.line = undefined; h.panic = false;
+            h.next = t + (crash === "normal" ? 0.6 + Math.random() * 0.6 : durationFor(crash));
+            if (crash !== "normal") soundRef.current?.play(crash);
+          } else if (act === "rubber" && rubber) {
+            let s: HorseState = "normal"; let line: string | undefined;
+            if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_LINES); }
+            else if (h === lastH) { s = underdogPanic(Math.random); line = pick(PANIC_LINES); h.panic = true; }
+            else if ((rank === 1 || rank === 2) && Math.random() < 0.5) s = midPackChaos(Math.random);
+            h.state = s; h.line = line;
+            h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
+            if (s !== "normal") soundRef.current?.play(s);
           }
         }
-        const ahead = Math.min(...unfinished.filter((u) => u.x > h.x).map((u) => u.x - h.x), 9999);
-        const draft = h.state === "normal" ? draftBoost(ahead) : 1;
         if (h.state === "exploded") h.burnt = true;
         if (h.state === "wiped") h.bruised = true;
-        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * draft * dt);
-        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; h.chase = undefined; if (!fin.length) soundRef.current?.play("victory"); fin.push(i); }
+        const sliding = act === "finish" && (h.state === "exploded" || h.state === "wiped");
+        const v = h.panic ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
+        h.x = Math.max(START - 40, h.x + v * dt);
+        if (h.x >= FINISH) {
+          // climax: the first nose over the line freezes everyone else
+          h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false;
+          soundRef.current?.play("victory");
+          const fin = [i, ...hs.map((_, k) => k).filter((k) => k !== i).sort((a, b) => hs[b]!.x - hs[a]!.x)];
+          setOrder(fin);
+          setHorses(hs.map((x) => ({ ...x })));
+          setPhase("climax");
+          return;
+        }
       }
-      setHorses(hRef.current.map((h) => ({ ...h })));
-      const lead = Math.min(FINISH + 400, Math.max(...hRef.current.map((h) => h.x)));
-      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.4));
+      setHorses(hs.map((h) => ({ ...h })));
+      const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.4));
       const forward = forwardCamera(Math.max(0, camR), target, maxCam);
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
       moveCamera(camR);
-      if (fin.length === hRef.current.length) {
-        if (doneAt < 0) { doneAt = t; setOrder([...fin]); }
-        if (t - doneAt > 1.8) { setPhase("done"); return; }
-      }
-      if (fin.length && !order.length) setOrder([...fin]);
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  // climax: winner walks forward at 150%, losers stay frozen, then the podium appears
+  useEffect(() => {
+    if (phase !== "climax") return;
+    let raf = 0; let last = performance.now();
+    const w = order[0];
+    const step = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const h = w !== undefined ? hRef.current[w] : undefined;
+      if (h) { h.x = Math.min(TRACK - 320, h.x + 60 * dt); setHorses(hRef.current.map((x) => ({ ...x }))); }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    const id = setTimeout(() => setPhase("done"), 3200);
+    return () => { cancelAnimationFrame(raf); clearTimeout(id); };
+  }, [phase, order]);
 
   if (phase === "setup") {
     return (
