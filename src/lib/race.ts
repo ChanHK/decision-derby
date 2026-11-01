@@ -276,3 +276,9 @@ export function pileUp(curse: HorseState, leaderX: number, secondX: number, trac
 export function reverseBoost(rand: () => number, boost: HorseState): boolean {
   return GADGET_POOL.includes(boost) && rand() < REVERSE_BOOST_CHANCE;
 }
+
+/** Gadgets must show up even in a tight pack: each director tick fires at least this often. */
+export const DIRECTOR_FLOOR = 0.45;
+export function directorChance(leaderX: number, lastX: number, trackWidth: number): number {
+  return Math.max(DIRECTOR_FLOOR, triggerChance(leaderX, lastX, trackWidth));
+}

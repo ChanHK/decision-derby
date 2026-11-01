@@ -30,3 +30,11 @@ describe("elastic rubber-banding", () => {
     expect(reverseBoost(() => 0, "drunk")).toBe(false);
   });
 });
+
+import { directorChance } from "@/lib/race";
+describe("director floor", () => {
+  it("fires at least 45% of ticks even with no gap", () => {
+    expect(directorChance(1000, 1000, 1000)).toBe(0.45);
+    expect(directorChance(1400, 1000, 1000)).toBeCloseTo(0.6);
+  });
+});

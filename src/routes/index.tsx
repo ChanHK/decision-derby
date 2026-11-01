@@ -10,7 +10,7 @@ import { RaceSound } from "@/lib/race-sound";
 import { LandscapeGate, Stage, useLandscape, useShortScreen } from "@/components/Stage";
 import { COLUMN_CHROME, fitScale, minFit, podiumShape, showGate, trackHeight } from "@/lib/landscape";
 
-import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, MAX_CHOICES, MIN_CHOICES, ordinal, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, MAX_CHOICES, MIN_CHOICES, ordinal, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, directorChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -233,14 +233,14 @@ function Index() {
       const trackW = FINISH - START;
       // elastic engine: one roll per second, chance grows with the leader-to-last gap
       let fire = false;
-      if (t >= nextTick) { nextTick = t + DIRECTOR_TICK; fire = Math.random() < triggerChance(leader.x, lastH.x, trackW); }
+      if (t >= nextTick) { nextTick = t + DIRECTOR_TICK; fire = Math.random() < directorChance(leader.x, lastH.x, trackW); }
       const second = ranked[1];
       for (let i = 0; i < hs.length; i++) {
         const h = hs[i]!;
         const prog = (h.x - START) / (FINISH - START);
         const leadP = (leader.x - START) / (FINISH - START);
         // chaos phase follows the leader so trailing horses still get gadgets; final purge stays per-horse
-        const act = directorPhase(prog) === "finish" ? "finish" : directorPhase(leadP) === "setup" ? "setup" : "rubber";
+        const act = directorPhase(prog) === "finish" ? "finish" : leadP < 0.15 ? "setup" : "rubber";
         const rank = ranked.indexOf(h);
         if (act === "finish") {
           const purged = crashFinish(finishPurge(h.state), prog);
@@ -253,8 +253,8 @@ function Index() {
             // non-mount boosts finish their normal run time, then the horse sprints
             h.state = "normal"; h.line = undefined; h.panic = false; h.reverse = false;
           }
-        } else if (t > h.next) {
-          if (h.state !== "normal") {
+        } else if (t > h.next || (fire && h.state === "normal")) {
+          if (h.state !== "normal" && t > h.next) {
             // states expire; ridden mounts still blow up mid-race
             const crash = h.state === "rocket" ? "exploded" : h.state === "skate" ? "wiped" : "normal";
             h.state = crash; h.line = undefined; h.panic = false; h.reverse = false; h.failAt = undefined;
@@ -265,7 +265,7 @@ function Index() {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
             else if (h === lastH) { s = underdogPanic(Math.random, h.lastBoost); line = SELF_SPEED.includes(s) ? STATE_INFO[s].bubble : pick(PANIC_LINES); h.panic = true; }
-            else if (rank >= 1 && Math.random() < 0.5) { s = midPackChaos(Math.random, h.lastBoost); if (SELF_SPEED.includes(s)) line = STATE_INFO[s].bubble; }
+            else if (rank >= 1 && Math.random() < 0.6) { s = midPackChaos(Math.random, h.lastBoost); if (SELF_SPEED.includes(s)) line = STATE_INFO[s].bubble; }
             if (PANIC_POOL.includes(s)) h.lastBoost = s;
             h.reverse = reverseBoost(Math.random, s);
             if (h === lastH && falseHope(Math.random, s)) h.failAt = t + FALSE_HOPE_DELAY;
