@@ -75,7 +75,28 @@ export function durationFor(state: HorseState): number {
 }
 
 /** Chance per roll that the last-place horse stands up and runs on two legs. */
-export const BIPED_CHANCE = 0.35;
+export const BIPED_CHANCE = 0.8;
+
+/** Rush states that burn a horse out when they end. */
+export const RUSH_STATES: HorseState[] = ["turbo", "zoomies", "biped"];
+/** Chance a horse crashes into a comic mishap right after a rush. */
+export const BURNOUT_CHANCE = 0.75;
+export const BURNOUTS: HorseState[] = ["graze", "nap", "wrongway", "moonwalk", "stumble", "tired"];
+
+/** After sprinting too hard a horse usually pays for it with a funny crash. */
+export function burnoutState(rand: () => number, previous: HorseState): HorseState | null {
+  if (!RUSH_STATES.includes(previous) || rand() >= BURNOUT_CHANCE) return null;
+  return BURNOUTS[Math.floor(rand() * BURNOUTS.length)] ?? "graze";
+}
+
+/** Horses behind the leader fight back: they often push with a turbo surge. */
+export function chaserState(rand: () => number): HorseState {
+  const r = rand();
+  if (r < 0.45) return "turbo";
+  if (r < 0.55) return "zoomies";
+  if (r < 0.7) return "drunk";
+  return "normal";
+}
 
 /** Only the trailing horse (with someone ahead to catch) can switch to a two-legged run. */
 export function rollBiped(rand: () => number, isLast: boolean, progress: number): boolean {

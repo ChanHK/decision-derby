@@ -46,3 +46,20 @@ describe("two-legged run", () => {
     expect(sp("winded", 0, 200)).toBeGreaterThan(0);
   });
 });
+
+import { burnoutState, chaserState } from "@/lib/race";
+describe("competitive rules", () => {
+  it("turbo usually ends in a burnout mishap", () => {
+    expect(burnoutState(((r) => () => r.shift() ?? 0)([0.5, 0]), "turbo")).toBe("graze");
+  });
+  it("normal gallop never burns out", () => {
+    expect(burnoutState(() => 0, "normal")).toBeNull();
+  });
+  it("last place goes two-legged 80% of rolls", () => {
+    expect(rollBiped(() => 0.79, true, 0.5)).toBe(true);
+    expect(rollBiped(() => 0.79, false, 0.5)).toBe(false);
+  });
+  it("chasers often push with turbo", () => {
+    expect(chaserState(() => 0.2)).toBe("turbo");
+  });
+});
