@@ -293,7 +293,7 @@ function Index() {
       <div className="flex flex-1 px-2 pb-4 gap-3">
         {/* tote board */}
         <aside className="tote w-40 sm:w-56 shrink-0 self-start p-2">
-          <div className="font-display text-center text-accent text-lg h-[52px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
+          <div className="font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
             const h = horses[i]; const rank = ranks.indexOf(i); const done = phase === "climax" ? order[0] === i : order.includes(i);
             return (
@@ -327,7 +327,7 @@ function Index() {
               style={{ left: `calc(${Math.min(1, Math.max(0, (h.x - START) / (FINISH - START))) * 96}% + 4px)`, background: COATS[i] }} />
           ))}
         </div>
-        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" || shake ? "screen-shake" : ""} relative min-w-0 self-start w-full overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" || shake ? "screen-shake" : ""} relative min-w-0 self-start w-full overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 116 + choices.length * 150 + 26 + 18 }}
           onKeyDown={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) pauseFollow(); }}
           onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
           onPointerDown={(e) => {
@@ -341,9 +341,9 @@ function Index() {
           onPointerMove={(e) => { const drag = dragRef.current; if (drag) e.currentTarget.scrollLeft = drag.scroll + drag.x - e.clientX; }}
           onPointerUp={() => { dragRef.current = null; }} onPointerCancel={() => { dragRef.current = null; }}>
           {/* parallax layer 1: far sky drifts at 0.1x */}
-          <div className="sky-bg pointer-events-none absolute top-0 h-[52px] z-0" style={{ left: camX * 0.9, width: vw + 200 }} />
+          <div className="sky-bg pointer-events-none absolute top-0 h-[64px] z-0 border-b-[3px] border-ink" style={{ left: camX * 0.9, width: vw + 200 }} />
           {/* parallax layer 2: treeline midground at 0.5x */}
-          <div className="treeline-bg pointer-events-none absolute top-[14px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 }} />
+          <div className="treeline-bg pointer-events-none absolute top-[26px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 }} />
           {/* live leaderboard, auto-sorted by track position */}
           {(phase === "race" || phase === "climax") && (
             <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
@@ -357,7 +357,8 @@ function Index() {
               ))}
             </div>
           )}
-          <div className="relative" style={{ width: TRACK, height: 52 + choices.length * 150 + 26, zoom, transition: "zoom .3s" }}>
+          <div className="relative" style={{ width: TRACK, height: 116 + choices.length * 150 + 26, zoom, transition: "zoom .3s" }}>
+            <div className="h-[64px]" />
             <div className="h-[26px] crowd-bg" />
             <div className="relative h-[26px] rail"><div className="absolute inset-x-0 -bottom-[18px] h-[18px] bunting z-10" /></div>
             {choices.map((_, i) => (
@@ -372,7 +373,7 @@ function Index() {
             {[0.25, 0.5, SPRINT_AT].map((p) => {
               const x = START + 200 + (FINISH - START) * p;
               return (
-                <div key={p} className="absolute top-[26px] z-10 flex flex-col items-center" style={{ left: x }}>
+                <div key={p} className="absolute top-[90px] z-10 flex flex-col items-center" style={{ left: x }}>
                   <span className={`font-display text-sm px-2 rounded border-2 border-ink ${p === SPRINT_AT ? "bg-primary text-primary-foreground" : "bg-card text-ink"}`}>
                     {p === SPRINT_AT ? "SPRINT!" : `${Math.round((1 - p) * 400)}m`}
                   </span>
@@ -380,14 +381,14 @@ function Index() {
               );
             })}
             {/* starting stalls */}
-            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "climax" || phase === "done"} />
+            <StartingGate lanes={choices.length} left={START} top={116} open={phase === "race" || phase === "climax" || phase === "done"} />
             {/* finish arch */}
-            <div className="absolute top-[52px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
-            <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
-            <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
-            <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
+            <div className="absolute top-[116px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
+            <div className="absolute top-[66px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
+            <div className="absolute top-[90px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
+            <div className="absolute top-[90px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
             {horses.map((h, i) => (
-              <div key={i} className="absolute z-30" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
+              <div key={i} className="absolute z-30" style={{ top: 116 + i * 150 + 22, left: h.x, transition: "none" }}>
                 <HorseActor h={h} i={i} phase={phase} />
               </div>
             ))}

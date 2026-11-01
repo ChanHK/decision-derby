@@ -301,5 +301,5 @@ body { font-family: var(--font-sans); }
   repeating-linear-gradient(90deg, var(--ink) 0 10px, transparent 10px 90px);
   filter: blur(3px); opacity: .8; }
 .hoof-dust { background: var(--dirt); border-radius: 9999px; }
-.spotlight { background: radial-gradient(ellipse 340px 300px at 50% 60%, transparent 30%, oklch(0.15 0.02 150 / 0.78) 72%); }
+.spotlight { background: radial-gradient(ellipse 380px 320px at 22% 50%, transparent 30%, oklch(0.15 0.02 150 / 0.78) 72%); }
 @media (prefers-reduced-motion: reduce) { .shake-quick { animation: none; } }
