@@ -16,17 +16,22 @@ import jet from "@/assets/race-jet.mp3.asset.json";
 import lunge from "@/assets/race-lunge.mp3.asset.json";
 import wiped from "@/assets/race-wiped.mp3.asset.json";
 import nap from "@/assets/race-nap.mp3.asset.json";
+import graze from "@/assets/race-graze.mp3.asset.json";
+import stumble from "@/assets/race-stumble.mp3.asset.json";
+import tactile from "@/assets/race-tactile.mp3.asset.json";
+import turbo from "@/assets/race-turbo.mp3.asset.json";
 
-export type Clip = "launch" | "tone3" | "tone2" | "tone1" | "go" | "hoofbeats" | "ufo" | "detonation" | "decision" | "rocket" | "scuba" | "biped" | "copter" | "jet" | "lunge" | "wiped" | "nap";
+export type Clip = "launch" | "tone3" | "tone2" | "tone1" | "go" | "hoofbeats" | "ufo" | "detonation" | "decision" | "rocket" | "scuba" | "biped" | "copter" | "jet" | "lunge" | "wiped" | "nap" | "graze" | "stumble" | "tactile" | "turbo";
 const CLIPS: Record<Clip, string> = {
   launch: launch.url, tone3: tone3.url, tone2: tone2.url, tone1: tone1.url, go: go.url,
   hoofbeats: hoofbeats.url, ufo: ufo.url, detonation: detonation.url, decision: decision.url,
   rocket: rocket.url, scuba: scuba.url, biped: biped.url, copter: copter.url, jet: jet.url, lunge: lunge.url,
-  wiped: wiped.url, nap: nap.url,
+  wiped: wiped.url, nap: nap.url, graze: graze.url, stumble: stumble.url, tactile: tactile.url, turbo: turbo.url,
 };
 
 const STATE_LOOPS: Partial<Record<HorseState, Clip>> = {
   ufo: "ufo", rocket: "rocket", scuba: "scuba", biped: "biped", copter: "copter", jet: "jet", nap: "nap",
+  graze: "graze", stumble: "stumble", winded: "stumble", tactile: "tactile", turbo: "turbo", zoomies: "turbo",
 };
 
 /** Only replacement uploads; constructed without touching browser APIs until a user gesture. */
