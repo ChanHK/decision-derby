@@ -293,6 +293,11 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
             <path d="M-30 10 Q0 16 30 10" fill="none" stroke={ink} strokeWidth="2" opacity="0.25" />
             {/* saddle cloth */}
             <path d="M-12 -22 L14 -23 L16 2 Q2 6 -12 2 Z" fill="var(--primary)" stroke={ink} strokeWidth="2.5" strokeLinejoin="round" />
+            {bruised && <>
+              <ellipse cx="-28" cy="0" rx="12" ry="9" fill="#6b21a8" opacity="0.45" />
+              <ellipse cx="-28" cy="0" rx="6" ry="4" fill="#1e3a8a" opacity="0.4" />
+              <ellipse cx="32" cy="4" rx="9" ry="7" fill="#6b21a8" opacity="0.4" />
+            </>}
           </g>
           {/* neck + head chain */}
           <g ref={R("neck")}>
@@ -308,6 +313,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
                 <path d="M-4 0 L0 -14 L6 0 Z" fill={color} stroke={ink} strokeWidth="2.5" strokeLinejoin="round" />
               </g>
               <path d="M-4 -12 Q2 -24 10 -18 Q4 -16 6 -10 Z" fill={mane} stroke={ink} strokeWidth="2" />
+              {bruised && <ellipse cx="12" cy="-3" rx="10" ry="9" fill="#6b21a8" opacity="0.5" />}
               <g transform="translate(12 -4)">
                 {anim === "sleep" ? (
                   <path d="M-6 0 Q0 5 6 0" fill="none" stroke={ink} strokeWidth="2.5" strokeLinecap="round" />
