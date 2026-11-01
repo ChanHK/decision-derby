@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import type { HorseState } from "@/lib/race";
+import rocketArt from "@/assets/rocket.png";
+import hoverArt from "@/assets/hoverboard.png";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped" | "rocket" | "surf";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -75,6 +77,26 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
       fnU: -55 * arc, fnL: 100 * arc, ffU: -45 * arc, ffL: 95 * arc,
       hnU: 35 * arc, hnL: -10 * arc, hfU: 42 * arc, hfL: -14 * arc,
       t1: 30 + 10 * arc, t2: 15, t3: 10, ear: -20, blink,
+    };
+  }
+  if (anim === "rocket") {
+    // Straddling the rocket seat: front hooves grip the handlebars, hind legs clamp the hull.
+    const r = s(t * 45);
+    return {
+      y: -18 + 1.2 * r, body: -6, neck: -20, head: -6 + r, ear: -60, blink,
+      fnU: -78, fnL: 40, ffU: -70, ffL: 46,
+      hnU: -48, hnL: 70, hfU: -42, hfL: 64,
+      t1: 92 + 4 * s(t * 30), t2: 6 * s(t * 30), t3: 8 * s(t * 30 + 1),
+    };
+  }
+  if (anim === "surf") {
+    // Surfer crouch on the hoverboard, carving side to side.
+    const c = s(t * 3);
+    return {
+      y: -20 + 3 * s(t * 5), body: 4 * c, neck: -8 + 5 * c, head: 4 - 3 * c, ear: -25, blink,
+      fnU: -22 - 4 * c, fnL: 34, ffU: -14 - 4 * c, ffL: 28,
+      hnU: 24 + 4 * c, hnL: -40, hfU: 16 + 4 * c, hfL: -32,
+      t1: 50 + 10 * s(t * 4), t2: 12 * s(t * 4 + 1), t3: 14 * s(t * 4 + 2),
     };
   }
   if (anim === "biped") {
@@ -247,10 +269,13 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
     <svg viewBox="0 0 200 140" width={size} height={size * 0.7} style={{ overflow: "visible" }}>
       <ellipse cx="100" cy="134" rx={62 * shadowScale} ry="6" fill={ink} opacity="0.18" />
       <g ref={rootRef}>
+        {anim === "surf" && <image href={hoverArt} x={-12} y={88} width={224} height={112} />}
         <g ref={R("body")}>
           {/* far legs (behind body) */}
           <Limb id="hf" color={color} far ink={ink} refs={refs} front={false} />
           <Limb id="ff" color={color} far ink={ink} refs={refs} front />
+          {/* ACME rocket sits between the far and near legs so the horse straddles it */}
+          {anim === "rocket" && <image href={rocketArt} x={-112} y={-4} width={240} height={120} />}
           {/* tail chain */}
           <g ref={R("t1")}>
             <path d="M0 0 Q-10 8 -4 20 Q4 12 6 2 Z" fill={mane} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
@@ -330,14 +355,6 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
             <circle key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.5}s` }} cx={150 + i * 6} cy="20" r={4 + i * 2} fill="var(--gate)" stroke={ink} strokeWidth="1.5" opacity="0.85" />
           ))}
           <text className="fx-bubble" x="160" y="10" fontSize="14" fontWeight="900" fill={ink}>hic!</text>
-        </g>
-      )}
-      {state === "turbo" && (anim === "gallop" || anim === "sprint") && (
-        <g className="fx-flame">
-          {[0, 1, 2].map((i) => (
-            <path key={i} d={`M${40 - i * 18} ${70 + i * 18} L${-10 - i * 14} ${66 + i * 18} L${-30 - i * 10} ${74 + i * 18} L${-6 - i * 14} ${80 + i * 18} Z`}
-              fill={i === 1 ? "var(--fx-fire)" : "var(--gold)"} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
-          ))}
         </g>
       )}
       {(anim === "gallop" || anim === "sprint") && state !== "tired" && (
