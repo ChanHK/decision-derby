@@ -1,15 +1,18 @@
 import type { HorseState } from "./race";
 import launch from "@/assets/race-launch.mp3.asset.json";
-import countdown from "@/assets/race-countdown.mp3.asset.json";
+import tone3 from "@/assets/440hz.mp3.asset.json";
+import tone2 from "@/assets/550hz.mp3.asset.json";
+import tone1 from "@/assets/660hz.mp3.asset.json";
+import go from "@/assets/gates_open_go.mp3.asset.json";
 import hoofbeats from "@/assets/race-hoofbeats.mp3.asset.json";
 import ufo from "@/assets/race-ufo.mp3.asset.json";
 import detonation from "@/assets/race-detonation.mp3.asset.json";
 import decision from "@/assets/race-decision.mp3.asset.json";
 
-export type Clip = "launch" | "countdown" | "hoofbeats" | "ufo" | "detonation" | "decision";
+export type Clip = "launch" | "tone3" | "tone2" | "tone1" | "go" | "hoofbeats" | "ufo" | "detonation" | "decision";
 const CLIPS: Record<Clip, string> = {
-  launch: launch.url, countdown: countdown.url, hoofbeats: hoofbeats.url,
-  ufo: ufo.url, detonation: detonation.url, decision: decision.url,
+  launch: launch.url, tone3: tone3.url, tone2: tone2.url, tone1: tone1.url, go: go.url,
+  hoofbeats: hoofbeats.url, ufo: ufo.url, detonation: detonation.url, decision: decision.url,
 };
 
 /** Only replacement uploads; constructed without touching browser APIs until a user gesture. */

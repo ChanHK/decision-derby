@@ -131,20 +131,17 @@ function Index() {
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
   }, [phase, maxCam]);
 
-  // The replacement countdown is one complete three-second clip.
+  // One tone per light (1s steps), gate sound at GO!, then a short beat before horses launch.
   useEffect(() => {
     if (phase !== "countdown") return;
-    let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    void (async () => {
-      await soundRef.current?.playClip("countdown");
-      if (cancelled) return;
-      timers.push(setTimeout(() => setCount(2), 1000));
-      timers.push(setTimeout(() => setCount(1), 2000));
-      timers.push(setTimeout(() => setCount(0), 3000));
-      timers.push(setTimeout(() => setPhase("race"), 3100));
-    })();
-    return () => { cancelled = true; timers.forEach(clearTimeout); };
+    const s = () => soundRef.current;
+    void s()?.playClip("tone3");
+    timers.push(setTimeout(() => { setCount(2); void s()?.playClip("tone2"); }, 1000));
+    timers.push(setTimeout(() => { setCount(1); void s()?.playClip("tone1"); }, 2000));
+    timers.push(setTimeout(() => { setCount(0); void s()?.playClip("go"); }, 3000));
+    timers.push(setTimeout(() => setPhase("race"), 3500));
+    return () => { timers.forEach(clearTimeout); };
   }, [phase]);
 
   // Keep "GO!" on screen while the horses launch, then let it fade away.
@@ -152,7 +149,7 @@ function Index() {
   useEffect(() => {
     if (phase !== "race") { setShowGo(false); return; }
     setShowGo(true);
-    const id = setTimeout(() => setShowGo(false), 800);
+    const id = setTimeout(() => setShowGo(false), 1300);
     return () => clearTimeout(id);
   }, [phase]);
 

@@ -79,12 +79,14 @@ describe("replacement race audio", () => {
     expect(sources).toHaveLength(0);
   });
 
-  it("leaves gadgets and unprovided events silent and loads only six replacements", async () => {
+  it("leaves gadgets silent and loads the 3 tones, GO! gate and 5 race clips", async () => {
     const sound = new RaceSound(); sound.setEnabled(true); await flush();
     for (const state of ["biped", "rocket", "skate", "jet", "scuba", "laksa", "copter", "lunge", "wiped", "timeout"] as const) sound.play(state);
     await flush();
     expect(sources).toHaveLength(0);
-    expect(fetch).toHaveBeenCalledTimes(6);
-    expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).includes("/race-"))).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(9);
+    const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
+    for (const name of ["440hz", "550hz", "660hz", "gates_open_go"]) expect(urls.some((u) => u.includes(name))).toBe(true);
+    expect(urls.some((u) => u.includes("race-countdown"))).toBe(false);
   });
 });
