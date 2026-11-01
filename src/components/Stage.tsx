@@ -99,3 +99,18 @@ export function LandscapeGate({ onPlay, onDismiss }: { onPlay: () => void; onDis
     </div>
   );
 }
+
+const SHORT_QUERY = "(max-height: 620px)";
+
+/** True when the screen is too short for a full-size results card (a phone held sideways). */
+export function useShortScreen(): boolean {
+  const [short, setShort] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(SHORT_QUERY);
+    const on = () => setShort(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return short;
+}

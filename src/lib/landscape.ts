@@ -45,3 +45,8 @@ export function showGate(o: {
   if (!o.portrait || o.forced || o.dismissed) return false;
   return o.pending || o.started;
 }
+
+/** Podium sizing: a phone held sideways has no room to spare, so the winners shrink. */
+export function podiumShape(short: boolean): { horse: number; blocks: number[] } {
+  return short ? { horse: 74, blocks: [64, 46, 30] } : { horse: 110, blocks: [96, 66, 44] };
+}
