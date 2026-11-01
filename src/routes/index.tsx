@@ -49,6 +49,8 @@ function Index() {
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [order, setOrder] = useState<number[]>([]);
   const [vw, setVw] = useState(1000);
+  const vwRef = useRef(vw);
+
   const [camX, setCamX] = useState(0);
   const [shake, setShake] = useState(false);
   const shakeT = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,10 +83,15 @@ function Index() {
   }
 
   function moveCamera(x: number) {
+    const el = viewRef.current;
+    if (followRef.current && el) {
+      el.scrollLeft = x;
+      x = el.scrollLeft; // the browser clamps to the track's real scroll range
+    }
     autoCam.current = x;
     setCamX(x);
-    if (followRef.current && viewRef.current) viewRef.current.scrollLeft = x;
   }
+
 
   function punchShake() {
     setShake(true);
@@ -120,6 +127,17 @@ function Index() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [trackH, phase]);
+
+  // Once the scale lands, the track box is a different width than it looked at.
+  // Refresh the camera's idea of it so the background layers and the follow
+  // distance are measured against what is really on screen.
+  useEffect(() => {
+    const w = viewRef.current?.clientWidth ?? 0;
+    if (!w) return;
+    vwRef.current = w;
+    setVw(w);
+  }, [fit, phase]);
+
 
 
   function start() {
@@ -269,7 +287,7 @@ function Index() {
         const sliding = act === "finish" && (h.state === "exploded" || h.state === "wiped");
         if (h.state === "lunge" && h.lungeAt !== undefined && t >= h.lungeAt) {
           // hold the deep lunge, then snap forward instantly
-          h.x += vw * LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
+          h.x += vwRef.current * LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
           void soundRef.current?.playClip("lunge", { volume: 0.7 }); // one sound per lunge
         }
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
@@ -291,7 +309,8 @@ function Index() {
       setHorses(hs.map((h) => ({ ...h })));
       // Steady forward-follow at a fixed scale; never zoom with pack spacing.
       const camMax = maxCamRef.current;
-      const target = Math.min(camMax, Math.max(0, leader.x - vw * 0.6));
+      const target = Math.min(camMax, Math.max(0, leader.x - vwRef.current * 0.6));
+
       const forward = forwardCamera(Math.max(0, camR), target, camMax);
 
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
