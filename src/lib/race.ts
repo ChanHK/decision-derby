@@ -1,4 +1,4 @@
-export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded";
+export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded" | "rocket" | "ufo" | "skate" | "bumped";
 
 export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubble?: string }> = {
   normal: { label: "Gallop", emoji: "🐎" },
@@ -13,6 +13,10 @@ export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubb
   zoomies: { label: "Zoomies", emoji: "🌀", bubble: "WHEEE!" },
   biped: { label: "Two legs!", emoji: "🏃", bubble: "ON YOUR LEFT!" },
   winded: { label: "Job done", emoji: "😮‍💨", bubble: "My work here is done." },
+  rocket: { label: "ACME Rocket", emoji: "🚀", bubble: "SEE YA CHUMPS!" },
+  ufo: { label: "Abducted!", emoji: "🛸", bubble: "Take me to your leader!" },
+  skate: { label: "Skateboard", emoji: "🛹", bubble: "RADICAL!" },
+  bumped: { label: "Bumped!", emoji: "💢", bubble: "Hey, watch it!" },
 };
 
 /** Progress (0..1) after which horses enter the final sprint. */
@@ -40,6 +44,10 @@ export function speedFor(state: HorseState, t: number, base: number, progress = 
     case "nap": return 0;
     case "biped": return base * 1.9;
     case "winded": return base * 0.45;
+    case "rocket": return base * 2.8;
+    case "ufo": return base * 0.05;
+    case "skate": return base * 1.6 * sprint;
+    case "bumped": return base * 0.5;
     case "zoomies": return base * (1.2 + Math.sin(t * 9) * 1.1);
     default: return base * sprint;
   }
@@ -50,13 +58,13 @@ export function randomState(rand: () => number = Math.random, leading = false, p
   const r = rand();
   if (leading) {
     if (r < (previous === "turbo" ? 0.8 : 0.55)) {
-      const mishaps: HorseState[] = ["wrongway", "moonwalk", "nap", "stumble", "graze"];
+      const mishaps: HorseState[] = ["wrongway", "moonwalk", "nap", "stumble", "graze", "ufo"];
       return mishaps[Math.floor(rand() * mishaps.length)] ?? "nap";
     }
     return "normal";
   }
   if (r < 0.45) return "normal";
-  const specials: HorseState[] = ["turbo", "drunk", "tired", "moonwalk", "wrongway", "stumble", "graze", "nap", "zoomies"];
+  const specials: HorseState[] = ["turbo", "drunk", "tired", "moonwalk", "wrongway", "stumble", "graze", "nap", "zoomies", "rocket", "skate", "ufo"];
   return specials[Math.floor(rand() * specials.length)] ?? "normal";
 }
 
@@ -67,6 +75,9 @@ export function forwardCamera(current: number, target: number, maximum: number):
 
 /** Seconds a special status lasts before the horse snaps back to normal. */
 export function durationFor(state: HorseState): number {
+  if (state === "bumped") return 0.6;
+  if (state === "ufo") return 1.4;
+  if (state === "rocket") return 1.3;
   if (state === "stumble") return 1.2;
   if (state === "graze") return 1.6;
   if (state === "wrongway" || state === "moonwalk") return 1.6;
@@ -78,7 +89,7 @@ export function durationFor(state: HorseState): number {
 export const BIPED_CHANCE = 0.8;
 
 /** Rush states that burn a horse out when they end. */
-export const RUSH_STATES: HorseState[] = ["turbo", "zoomies", "biped"];
+export const RUSH_STATES: HorseState[] = ["turbo", "zoomies", "biped", "rocket", "skate"];
 /** Chance a horse crashes into a comic mishap right after a rush. */
 export const BURNOUT_CHANCE = 0.75;
 export const BURNOUTS: HorseState[] = ["graze", "nap", "wrongway", "moonwalk", "stumble", "tired"];
@@ -92,9 +103,11 @@ export function burnoutState(rand: () => number, previous: HorseState): HorseSta
 /** Horses behind the leader fight back: they often push with a turbo surge. */
 export function chaserState(rand: () => number): HorseState {
   const r = rand();
-  if (r < 0.45) return "turbo";
-  if (r < 0.55) return "zoomies";
-  if (r < 0.7) return "drunk";
+  if (r < 0.3) return "turbo";
+  if (r < 0.45) return "rocket";
+  if (r < 0.58) return "skate";
+  if (r < 0.68) return "zoomies";
+  if (r < 0.78) return "drunk";
   return "normal";
 }
 
@@ -107,3 +120,14 @@ export function rollBiped(rand: () => number, isLast: boolean, progress: number)
 export function bipedDone(myX: number, targetX: number): boolean {
   return myX > targetX;
 }
+
+/** Neighbouring-lane horses this close (px) bump into each other. */
+export const BUMP_RANGE = 35;
+export function shouldBump(dx: number, laneGap: number, rand: () => number): boolean {
+  return laneGap === 1 && Math.abs(dx) < BUMP_RANGE && rand() < 0.5;
+}
+/** Drafting behind a rival a short way ahead gives a speed boost. */
+export function draftBoost(gapAhead: number): number {
+  return gapAhead > 30 && gapAhead < 140 ? 1.18 : 1;
+}
+export const RIVAL_LINES = ["Outta my way!", "Hey, watch it!", "BEEP BEEP!", "Move it, slowpoke!", "Rude!!"];
