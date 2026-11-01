@@ -141,6 +141,8 @@ function Index() {
 
   useEffect(() => {
     if (phase !== "race") return;
+    soundRef.current?.playClip("gallop", { loop: true, volume: 0.45 });
+    let windDone = false;
     let raf = 0; let last = performance.now(); let t = 0; let camR = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
@@ -156,6 +158,7 @@ function Index() {
         const act = directorPhase(prog) === "finish" ? "finish" : directorPhase(leadP) === "setup" ? "setup" : "rubber";
         const rank = ranked.indexOf(h);
         if (act === "finish") {
+          if (!windDone) { windDone = true; soundRef.current?.playClip("wind", { volume: 0.7 }); }
           const purged = crashFinish(finishPurge(h.state), prog);
           if (purged !== h.state) {
             const crashed = purged === "exploded" || purged === "wiped";
@@ -215,7 +218,7 @@ function Index() {
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); soundRef.current?.stopLoop("gallop"); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
