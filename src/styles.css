@@ -237,4 +237,5 @@ body { font-family: var(--font-sans); }
 .race-scroll:active { cursor: grabbing; }
 .race-scroll > div { user-select: none; }
 @media (prefers-reduced-motion: reduce) {
+  .fx-float, .fx-bubble, .fx-zoom, .fx-moon, .confetti { animation: none; }
 }
