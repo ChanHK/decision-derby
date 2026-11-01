@@ -414,7 +414,7 @@ function Index() {
                   <div className="tote-line mt-2 flex items-center justify-between gap-1">
                     <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? ordinal(rank) : "—"}</span>
                     {h && (phase === "race" || phase === "climax") && !done && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
+                      <span className={`tote-chip text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
                       </span>
                     )}
