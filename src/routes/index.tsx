@@ -48,6 +48,8 @@ function Index() {
   const soundRef = useRef<RaceSound | null>(null);
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [order, setOrder] = useState<number[]>([]);
+  // the decision appears as soon as the winner crosses; the rest keep running behind it
+  const [showResult, setShowResult] = useState(false);
   const [vw, setVw] = useState(1000);
   const vwRef = useRef(vw);
 
@@ -156,6 +158,7 @@ function Index() {
     });
     setHorses([...hRef.current]);
     setOrder([]);
+    setShowResult(false);
     void soundRef.current?.playClip("launch");
     setPhase("pan");
   }
@@ -298,7 +301,11 @@ function Index() {
         if (h.x >= FINISH && h.finish === undefined) {
           // every horse runs through the line; rankings come from finish order
           h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false; h.reverse = false;
-          if (!hs.some((o, k) => k !== i && o.finish !== undefined)) soundRef.current?.play("victory");
+          if (!hs.some((o, k) => k !== i && o.finish !== undefined)) {
+            soundRef.current?.play("victory");
+            setTimeout(() => setShowResult(true), 1500);
+          }
+          setOrder(hs.map((_, k) => k).filter((k) => hs[k]!.finish !== undefined).sort((a, b) => hs[a]!.finish! - hs[b]!.finish!));
         }
         if (h.finish !== undefined) h.x = Math.min(TRACK - 320, h.x);
       }
@@ -542,8 +549,8 @@ function Index() {
       </div>
 
 
-      {phase === "done" && winner !== undefined && (
-        <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-[200]">
+      {(phase === "done" || (showResult && phase !== "setup")) && winner !== undefined && (
+        <div className="fixed inset-0 bg-ink/30 flex items-center justify-center p-4 z-[200]">
           <Confetti />
           <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-full overflow-y-auto">
             <div className="flex justify-end mb-2">{soundToggle}</div>
