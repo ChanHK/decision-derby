@@ -47,8 +47,6 @@ function Index() {
   const [order, setOrder] = useState<number[]>([]);
   const [vw, setVw] = useState(1000);
   const [camX, setCamX] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const zoomRef = useRef(1);
   const [shake, setShake] = useState(false);
   const shakeT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -104,7 +102,7 @@ function Index() {
     if (valid.length < 2) return;
     setChoices(valid);
     followRef.current = true; setFollowing(true); autoCam.current = 0;
-    zoomRef.current = 1; setZoom(1); setCamX(0);
+    setCamX(0);
     const deck = [...PERSONALITIES].sort(() => Math.random() - 0.5);
     hRef.current = valid.map((_, i) => {
       const personality = deck[i] ?? PERSONALITIES[0];
@@ -201,14 +199,8 @@ function Index() {
         }
       }
       setHorses(hs.map((h) => ({ ...h })));
-      // bounding-box zoom: tight pack zooms in to 1.3x, spread pack eases back to 1.0x
-      const spread = leader.x - lastH.x;
-      const zTarget = spread < vw * 0.55 ? 1.3 : 1;
-      zoomRef.current += (zTarget - zoomRef.current) * Math.min(1, dt * 3);
-      setZoom(zoomRef.current);
-      const effVw = vw / zoomRef.current;
-      // leader pan: keep 1st place anchored near the 60% mark of the screen
-      const target = Math.min(maxCam, Math.max(0, leader.x - effVw * 0.6));
+      // Steady forward-follow at a fixed scale; never zoom with pack spacing.
+      const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.6));
       const forward = forwardCamera(Math.max(0, camR), target, maxCam);
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
       moveCamera(camR);
@@ -357,7 +349,7 @@ function Index() {
               ))}
             </div>
           )}
-          <div className="relative" style={{ width: TRACK, height: 116 + choices.length * 150 + 26, zoom, transition: "zoom .3s" }}>
+          <div className="relative" style={{ width: TRACK, height: 116 + choices.length * 150 + 26 }}>
             <div className="h-[64px]" />
             <div className="h-[26px] crowd-bg" />
             <div className="relative h-[26px] rail"><div className="absolute inset-x-0 -bottom-[18px] h-[18px] bunting z-10" /></div>
