@@ -7,7 +7,9 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, draftBoost, type HorseState } from "@/lib/race";
+import { CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+
+const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,8 +30,8 @@ const TRACK = 4700; // world px
 const FINISH = 3600;
 const START = 120;
 
-type Phase = "setup" | "pan" | "countdown" | "race" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean };
+type Phase = "setup" | "pan" | "countdown" | "race" | "climax" | "done";
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -124,78 +126,86 @@ function Index() {
 
   useEffect(() => {
     if (phase !== "race") return;
-    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; const fin: number[] = []; let doneAt = -1;
+    let raf = 0; let last = performance.now(); let t = 0; let camR = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-      const unfinished = hRef.current.filter((h) => h.finish === undefined);
-      const leaderX = Math.max(...unfinished.map((h) => h.x));
-      for (let i = 0; i < hRef.current.length; i++) {
-        const h = hRef.current[i];
-        if (!h) continue;
-        if (h.finish !== undefined) {
-          // victory lap: coast into the winner's circle and slow to a stop
-          const room = Math.max(0, TRACK - 260 - h.x);
-          h.x += Math.min(h.base * 1.4, room * 2) * dt;
-          continue;
-        }
+      const hs = hRef.current;
+      const ranked = [...hs].sort((a, b) => b.x - a.x);
+      const leader = ranked[0]!, lastH = ranked[ranked.length - 1]!;
+      const rubber = rubberBandActive(leader.x, lastH.x, vw);
+      for (let i = 0; i < hs.length; i++) {
+        const h = hs[i]!;
         const prog = (h.x - START) / (FINISH - START);
-        const leading = h.x === leaderX && prog >= 0.08 && unfinished.length > 1;
-        const isLast = unfinished.length > 1 && h.x === Math.min(...unfinished.map((u) => u.x));
-        const chased = h.chase !== undefined ? hRef.current[h.chase] : undefined;
-        if (h.state === "biped" && (!chased || chased.finish !== undefined || bipedDone(h.x, chased.x))) {
-          // the comeback burns it out too
-          const crash = burnoutState(Math.random, "biped");
-          h.state = crash ?? "winded"; h.chase = undefined; h.next = t + (crash ? durationFor(crash) : 2.2);
-          soundRef.current?.play(h.state);
-        } else if (h.state === "biped") {
-          // keep running until it passes the horse it is chasing
-        } else if (isLast && h.state === "normal" && t > (h.bipedAt ?? 0) && rollBiped(Math.random, isLast, prog)) {
-          const aheadList = unfinished.filter((u) => u.x > h.x).sort((a, b) => a.x - b.x);
-          const ahead = aheadList[Math.min(1, aheadList.length - 1)]; // overtake two horses
-          if (ahead) { h.state = "biped"; h.chase = hRef.current.indexOf(ahead); h.next = t + 99; soundRef.current?.play("biped"); }
-          else h.bipedAt = t + 1;
-        } else if (isLast && h.state === "normal" && t > (h.bipedAt ?? 0)) {
-          h.bipedAt = t + 1; // desperate horse re-checks every second
+        const act = directorPhase(prog);
+        const rank = ranked.indexOf(h);
+        if (act === "finish") {
+          const purged = crashFinish(finishPurge(h.state), prog);
+          if (purged !== h.state) {
+            const crashed = purged === "exploded" || purged === "wiped";
+            h.state = purged; h.line = undefined; h.panic = false;
+            h.next = t + (crashed ? 99 : 0); // crashes slide all the way over the line
+            if (crashed) soundRef.current?.play(purged);
+          }
         } else if (t > h.next) {
           if (h.state !== "normal") {
-            const crash = burnoutState(Math.random, h.state);
-            const next = crash ?? "normal";
-            h.state = next;
-            h.next = t + (next === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(next));
-            soundRef.current?.play(next);
-          }
-          else {
-            let s = leading ? randomState(Math.random, true) : chaserState(Math.random);
-            if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
-            h.state = s;
-            soundRef.current?.play(s);
-            h.next = t + (s === "normal" ? 0.8 + Math.random() * 0.8 : durationFor(s));
+            // states expire; ridden mounts still blow up mid-race
+            const crash = h.state === "rocket" ? "exploded" : h.state === "skate" ? "wiped" : "normal";
+            h.state = crash; h.line = undefined; h.panic = false;
+            h.next = t + (crash === "normal" ? 0.6 + Math.random() * 0.6 : durationFor(crash));
+            if (crash !== "normal") soundRef.current?.play(crash);
+          } else if (act === "rubber" && rubber) {
+            let s: HorseState = "normal"; let line: string | undefined;
+            if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_LINES); }
+            else if (h === lastH) { s = underdogPanic(Math.random); line = pick(PANIC_LINES); h.panic = true; }
+            else if ((rank === 1 || rank === 2) && Math.random() < 0.5) s = midPackChaos(Math.random);
+            h.state = s; h.line = line;
+            h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
+            if (s !== "normal") soundRef.current?.play(s);
           }
         }
-        const ahead = Math.min(...unfinished.filter((u) => u.x > h.x).map((u) => u.x - h.x), 9999);
-        const draft = h.state === "normal" ? draftBoost(ahead) : 1;
         if (h.state === "exploded") h.burnt = true;
         if (h.state === "wiped") h.bruised = true;
-        h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * draft * dt);
-        if (h.x >= FINISH) { h.finish = t; h.state = "normal"; h.chase = undefined; if (!fin.length) soundRef.current?.play("victory"); fin.push(i); }
+        const sliding = act === "finish" && (h.state === "exploded" || h.state === "wiped");
+        const v = h.panic ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
+        h.x = Math.max(START - 40, h.x + v * dt);
+        if (h.x >= FINISH) {
+          // climax: the first nose over the line freezes everyone else
+          h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false;
+          soundRef.current?.play("victory");
+          const fin = [i, ...hs.map((_, k) => k).filter((k) => k !== i).sort((a, b) => hs[b]!.x - hs[a]!.x)];
+          setOrder(fin);
+          setHorses(hs.map((x) => ({ ...x })));
+          setPhase("climax");
+          return;
+        }
       }
-      setHorses(hRef.current.map((h) => ({ ...h })));
-      const lead = Math.min(FINISH + 400, Math.max(...hRef.current.map((h) => h.x)));
-      const target = Math.min(maxCam, Math.max(0, lead - vw * 0.4));
+      setHorses(hs.map((h) => ({ ...h })));
+      const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.4));
       const forward = forwardCamera(Math.max(0, camR), target, maxCam);
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
       moveCamera(camR);
-      if (fin.length === hRef.current.length) {
-        if (doneAt < 0) { doneAt = t; setOrder([...fin]); }
-        if (t - doneAt > 1.8) { setPhase("done"); return; }
-      }
-      if (fin.length && !order.length) setOrder([...fin]);
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  // climax: winner walks forward at 150%, losers stay frozen, then the podium appears
+  useEffect(() => {
+    if (phase !== "climax") return;
+    let raf = 0; let last = performance.now();
+    const w = order[0];
+    const step = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const h = w !== undefined ? hRef.current[w] : undefined;
+      if (h) { h.x = Math.min(TRACK - 320, h.x + 60 * dt); setHorses(hRef.current.map((x) => ({ ...x }))); }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    const id = setTimeout(() => setPhase("done"), 3200);
+    return () => { cancelAnimationFrame(raf); clearTimeout(id); };
+  }, [phase, order]);
 
   if (phase === "setup") {
     return (
@@ -257,7 +267,7 @@ function Index() {
         <aside className="tote w-40 sm:w-56 shrink-0 self-start p-2">
           <div className="font-display text-center text-accent text-lg h-[52px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
-            const h = horses[i]; const rank = ranks.indexOf(i); const done = order.includes(i);
+            const h = horses[i]; const rank = ranks.indexOf(i); const done = phase === "climax" ? order[0] === i : order.includes(i);
             return (
               <div key={i} className="h-[150px] flex items-center">
                 <div className="tote-row w-full p-2">
@@ -267,7 +277,7 @@ function Index() {
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-1">
                     <span className={`font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
-                    {h && phase === "race" && !done && (
+                    {h && (phase === "race" || phase === "climax") && !done && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
                       </span>
@@ -280,7 +290,7 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} aria-label="Race track" tabIndex={0} className="race-scroll relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" ? "screen-shake" : ""} relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 52 + choices.length * 150 + 26 + 18 }}
           onKeyDown={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) pauseFollow(); }}
           onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
           onPointerDown={(e) => {
@@ -316,7 +326,7 @@ function Index() {
               );
             })}
             {/* starting stalls */}
-            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "done"} />
+            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "climax" || phase === "done"} />
             {/* finish arch */}
             <div className="absolute top-[52px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
             <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
@@ -328,6 +338,14 @@ function Index() {
               </div>
             ))}
           </div>
+          {phase === "climax" && winner !== undefined && (
+            <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none p-4" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
+              <div className="decision-slam cartoon-card bg-accent px-6 py-4 text-center">
+                <div className="font-display text-2xl sm:text-3xl text-ink">THE DECISION IS MADE:</div>
+                <div className="font-display text-5xl sm:text-7xl text-primary break-words">{choices[winner]}</div>
+              </div>
+            </div>
+          )}
           {phase === "countdown" && (
             <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <span key={count} className="font-display text-9xl text-accent countdown-pop drop-shadow">{count || "GO!"}</span>
@@ -365,18 +383,20 @@ function Index() {
 }
 
 function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
-  const racing = phase === "race" && h.finish === undefined;
+  const frozen = phase === "climax" && h.finish === undefined;
+  const champ = phase === "climax" && h.finish !== undefined;
+  const racing = (phase === "race" || phase === "climax") && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
-    <div className="relative">
+    <div className={`relative ${frozen ? "fx-frozen" : ""}`} style={champ ? { transform: "scale(1.5)", transformOrigin: "50% 100%", transition: "transform .4s ease-out" } : undefined}>
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
         <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} />
+          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}

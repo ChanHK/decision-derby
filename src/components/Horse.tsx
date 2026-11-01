@@ -193,8 +193,8 @@ function Limb({ id, color, far, ink, refs, front }: {
   );
 }
 
-export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size = 200, bruised = false }: {
-  color: string; mane?: string; state?: HorseState; anim: HorseAnim; size?: number; bruised?: boolean;
+export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size = 200, bruised = false, frozen = false }: {
+  color: string; mane?: string; state?: HorseState; anim: HorseAnim; size?: number; bruised?: boolean; frozen?: boolean;
 }) {
   const refs = useRef<Partial<Record<Bone, SVGGElement | null>>>({});
   const rootRef = useRef<SVGGElement | null>(null);
@@ -206,6 +206,8 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
   const sleepBlend = useRef(0);
 
   animRef.current = anim;
+  const frozenRef = useRef(frozen);
+  frozenRef.current = frozen;
   useEffect(() => {
     // Turbo boost triggers a jump/leap
     if (state === "turbo" && stateRef.current !== "turbo" && (anim === "gallop" || anim === "sprint")) jumpStart.current = performance.now();
@@ -220,6 +222,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
     const t0 = last - Math.random() * 3000;
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      if (frozenRef.current) { raf = requestAnimationFrame(tick); return; } // locked mid-pose
       const a = animRef.current, st = stateRef.current;
       const rate = a === "biped" ? 3.6 : a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" || st === "winded" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
