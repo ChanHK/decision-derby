@@ -139,8 +139,8 @@ function Index() {
     void s()?.playClip("tone3");
     timers.push(setTimeout(() => { setCount(2); void s()?.playClip("tone2"); }, 1000));
     timers.push(setTimeout(() => { setCount(1); void s()?.playClip("tone1"); }, 2000));
-    timers.push(setTimeout(() => { setCount(0); void s()?.playClip("go"); }, 3000));
-    timers.push(setTimeout(() => setPhase("race"), 3500));
+    // GO!: green light, gate sound, doors swing open and horses burst out together.
+    timers.push(setTimeout(() => { setCount(0); void s()?.playClip("go", { volume: 1 }); setPhase("race"); }, 3000));
     return () => { timers.forEach(clearTimeout); };
   }, [phase]);
 
@@ -425,8 +425,12 @@ function Index() {
             </div>
           )}
           {phase === "race" && showGo && (
-            <div className="absolute top-0 bottom-0 z-[100] pointer-events-none flex items-center justify-center" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
-              <span className="font-display text-8xl text-accent go-fade drop-shadow">GO!</span>
+            <div className="absolute top-0 bottom-0 z-[100] pointer-events-none flex flex-col gap-4 items-center justify-center go-fade" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
+              <div className="flex gap-3 rounded-2xl border-[4px] border-ink bg-ink/80 px-5 py-4">
+                {[3, 2, 1].map((n) => <span key={n} className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: "var(--board-2)" }} />)}
+                <span className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: "var(--grass)" }} />
+              </div>
+              <span className="font-display text-8xl text-accent drop-shadow">GO!</span>
             </div>
           )}
           {phase === "countdown" && (
