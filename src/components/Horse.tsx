@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { HorseState } from "@/lib/race";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "jump" | "sleep";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -19,6 +19,14 @@ function legGallop(p: number, off: number, front: boolean): [number, number] {
   const w = TAU * (p + off);
   const upper = -32 * s(w);
   const lower = front ? 10 + 55 * Math.max(0, s(w + 1.2)) : -8 - 50 * Math.max(0, s(w - 1.2));
+  return [upper, lower];
+}
+/** Full-power stride: big reach plus deep knee/hock tuck during the swing phase. */
+function legSprint(p: number, off: number, front: boolean): [number, number] {
+  const w = TAU * (p + off);
+  const upper = -50 * s(w) + (front ? -8 : 6);
+  const tuck = Math.max(0, s(w + (front ? 1.0 : -1.0)));
+  const lower = front ? 6 + 110 * tuck : -6 - 95 * tuck;
   return [upper, lower];
 }
 function legWalk(p: number, off: number, front: boolean): [number, number] {
@@ -47,6 +55,18 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
       fnU: -55 * arc, fnL: 100 * arc, ffU: -45 * arc, ffL: 95 * arc,
       hnU: 35 * arc, hnL: -10 * arc, hfU: 42 * arc, hfL: -14 * arc,
       t1: 30 + 10 * arc, t2: 15, t3: 10, ear: -20, blink,
+    };
+  }
+  if (anim === "sprint") {
+    const w = TAU * p;
+    const [fnU, fnL] = legSprint(p, 0.5, true);
+    const [ffU, ffL] = legSprint(p, 0.58, true);
+    const [hnU, hnL] = legSprint(p, 0, false);
+    const [hfU, hfL] = legSprint(p, 0.08, false);
+    return {
+      y: -12 * Math.max(0, s(w + 0.4)), body: -8 + 7 * s(w), neck: -22 + 6 * s(w + 0.6), head: -8 + 5 * s(w + 1),
+      fnU, fnL, ffU, ffL, hnU, hnL, hfU, hfL,
+      t1: 78 + 6 * s(w * 2), t2: 8 * s(w * 2 + 0.8), t3: 12 * s(w * 2 + 1.6), ear: -45, blink,
     };
   }
   if (anim === "gallop") {
