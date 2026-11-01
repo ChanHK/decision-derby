@@ -10,5 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Keep race probability and automatic camera rules in browser-safe race helpers with concrete unit tests so the animation loop shares tested behavior.
-- Generate optional race audio through a browser-only Web Audio controller, initialized by a user gesture, to avoid asset downloads and autoplay failures.
+- Play optional uploaded race audio through a browser-only Web Audio controller unlocked by a user gesture; cancel pending and active state loops when their animation ends.
 - Use native horizontal track scrolling; user gestures pause automatic following until explicitly resumed.
