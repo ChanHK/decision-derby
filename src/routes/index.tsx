@@ -392,6 +392,8 @@ function Index() {
               </div>
             ))}
           </div>
+          {/* parallax layer 4: blurred foreground rail whips past at 1.5x */}
+          <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 }} />
           {phase === "climax" && winner !== undefined && (
             <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none p-4" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <div className="decision-slam cartoon-card bg-accent px-6 py-4 text-center">
@@ -401,10 +403,21 @@ function Index() {
             </div>
           )}
           {phase === "countdown" && (
-            <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
-              <span key={count} className="font-display text-9xl text-accent countdown-pop drop-shadow">{count || "GO!"}</span>
+            <div className="absolute top-0 bottom-0 z-[100] pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
+              {/* dim the track, spotlight the starting line */}
+              <div className="spotlight absolute inset-0" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                <div className="flex gap-3 rounded-2xl border-[4px] border-ink bg-ink/80 px-5 py-4">
+                  {[3, 2, 1].map((n) => (
+                    <span key={n} className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count >= n ? "var(--destructive)" : "var(--board-2)" }} />
+                  ))}
+                  <span className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count === 0 ? "var(--grass)" : "var(--board-2)" }} />
+                </div>
+                {count === 0 && <span className="font-display text-8xl text-accent countdown-pop drop-shadow">GO!</span>}
+              </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
