@@ -159,6 +159,9 @@ function Index() {
             h.state = purged; h.line = undefined; h.panic = false;
             h.next = t + (crashed ? 99 : 0); // crashes slide all the way over the line
             if (crashed) { soundRef.current?.play(purged); if (purged === "exploded") punchShake(); }
+          } else if (t > h.next && PANIC_POOL.includes(h.state) && h.state !== "rocket" && h.state !== "skate") {
+            // non-mount boosts finish their normal run time, then the horse sprints
+            h.state = "normal"; h.line = undefined; h.panic = false;
           }
         } else if (t > h.next) {
           if (h.state !== "normal") {
