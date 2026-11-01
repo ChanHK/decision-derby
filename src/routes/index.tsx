@@ -141,27 +141,33 @@ function Index() {
         const isLast = unfinished.length > 1 && h.x === Math.min(...unfinished.map((u) => u.x));
         const chased = h.chase !== undefined ? hRef.current[h.chase] : undefined;
         if (h.state === "biped" && (!chased || chased.finish !== undefined || bipedDone(h.x, chased.x))) {
-          h.state = "winded"; h.chase = undefined; h.next = t + 2.2;
+          // the comeback burns it out too
+          const crash = burnoutState(Math.random, "biped");
+          h.state = crash ?? "winded"; h.chase = undefined; h.next = t + (crash ? durationFor(crash) : 2.2);
+          soundRef.current?.play(h.state);
         } else if (h.state === "biped") {
           // keep running until it passes the horse it is chasing
-        } else if (t > h.next && h.state === "normal" && rollBiped(Math.random, isLast, prog)) {
+        } else if (isLast && h.state === "normal" && t > (h.bipedAt ?? 0) && rollBiped(Math.random, isLast, prog)) {
           const aheadList = unfinished.filter((u) => u.x > h.x).sort((a, b) => a.x - b.x);
           const ahead = aheadList[Math.min(1, aheadList.length - 1)]; // overtake two horses
           if (ahead) { h.state = "biped"; h.chase = hRef.current.indexOf(ahead); h.next = t + 99; soundRef.current?.play("biped"); }
+          else h.bipedAt = t + 1;
+        } else if (isLast && h.state === "normal" && t > (h.bipedAt ?? 0)) {
+          h.bipedAt = t + 1; // desperate horse re-checks every second
         } else if (t > h.next) {
           if (h.state !== "normal") {
-            const next = leading && h.state === "turbo" ? randomState(Math.random, true, "turbo") : "normal";
+            const crash = burnoutState(Math.random, h.state);
+            const next = crash ?? "normal";
             h.state = next;
-            h.next = t + (next === "normal" ? 3.5 + Math.random() * 3 : durationFor(next));
+            h.next = t + (next === "normal" ? 1.5 + Math.random() * 2 : durationFor(next));
             soundRef.current?.play(next);
           }
           else {
-            let s = randomState(Math.random, leading);
-            if (!leading && prog >= SPRINT_AT && s === "tired") s = "turbo";
+            let s = leading ? randomState(Math.random, true) : chaserState(Math.random);
             if (prog < 0.08 && (s === "wrongway" || s === "moonwalk")) s = "normal";
             h.state = s;
             soundRef.current?.play(s);
-            h.next = t + (s === "normal" ? 3.5 + Math.random() * 3 : durationFor(s));
+            h.next = t + (s === "normal" ? 1.5 + Math.random() * 2 : durationFor(s));
           }
         }
         h.x = Math.max(START - 40, h.x + speedFor(h.state, t + i, h.base, prog, h.kick) * dt);
