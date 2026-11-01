@@ -46,6 +46,11 @@ function Index() {
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [order, setOrder] = useState<number[]>([]);
   const [vw, setVw] = useState(1000);
+  const [camX, setCamX] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  const [shake, setShake] = useState(false);
+  const shakeT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const hRef = useRef<H[]>([]);
   const valid = choices.map((c) => c.trim()).filter(Boolean);
@@ -72,7 +77,14 @@ function Index() {
 
   function moveCamera(x: number) {
     autoCam.current = x;
+    setCamX(x);
     if (followRef.current && viewRef.current) viewRef.current.scrollLeft = x;
+  }
+
+  function punchShake() {
+    setShake(true);
+    if (shakeT.current) clearTimeout(shakeT.current);
+    shakeT.current = setTimeout(() => setShake(false), 220);
   }
 
   const soundToggle = <Button variant="secondary" size="icon" className="cartoon-btn shrink-0" onClick={toggleSound}
