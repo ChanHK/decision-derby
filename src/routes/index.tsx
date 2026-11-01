@@ -387,6 +387,7 @@ function Index() {
               </div>
             ))}
             {/* one spotlight per horse during the countdown */}
+            {phase === "countdown" && <div className="pointer-events-none absolute inset-0 z-[25] bg-ink/55" />}
             {phase === "countdown" && choices.map((_, i) => (
               <div key={`spot-${i}`} className="lane-spot pointer-events-none absolute z-[35]" style={{ left: START - 30, top: 116 + i * 150 - 40, width: 260, height: 190 }} />
             ))}
