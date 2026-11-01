@@ -7,8 +7,8 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { LandscapeGate, Stage, useLandscape } from "@/components/Stage";
-import { COLUMN_CHROME, fitScale, showGate, trackHeight } from "@/lib/landscape";
+import { LandscapeGate, Stage, useLandscape, useShortScreen } from "@/components/Stage";
+import { COLUMN_CHROME, fitScale, podiumShape, showGate, trackHeight } from "@/lib/landscape";
 
 import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
@@ -56,6 +56,8 @@ function Index() {
   const shakeT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const land = useLandscape();
+  const shape = podiumShape(useShortScreen());
+
   const [pendingStart, setPendingStart] = useState(false);
   const [gateOff, setGateOff] = useState(false);
 
@@ -545,21 +547,21 @@ function Index() {
       {phase === "done" && winner !== undefined && (
         <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-[200]">
           <Confetti />
-          <div className="cartoon-card relative w-full max-w-lg p-6 text-center">
+          <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-[92dvh] overflow-y-auto">
             <div className="flex justify-end mb-2">{soundToggle}</div>
-            <p className="font-bold text-muted-foreground">The horses have decided…</p>
-            <h2 className="font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
-            <div className="flex items-end justify-center gap-3 mt-6">
+            <p className="podium-lead font-bold text-muted-foreground">The horses have decided…</p>
+            <h2 className="podium-title font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
+            <div className="podium-row flex items-end justify-center gap-3 mt-6">
               {[1, 0, 2].map((p) => order[p] !== undefined && (
-                <div key={p} className="flex flex-col items-center w-28">
-                  <Horse color={COATS[order[p]!]!} anim={p === 0 ? "jump" : "idle"} size={110} />
+                <div key={p} className="podium-col flex flex-col items-center w-28">
+                  <Horse color={COATS[order[p]!]!} anim={p === 0 ? "jump" : "idle"} size={shape.horse} />
                   <div className="text-sm font-bold truncate w-full">{choices[order[p]]}</div>
                   <div className="w-full rounded-t-lg border-[3px] border-ink bg-secondary font-display text-3xl flex items-center justify-center"
-                    style={{ height: p === 0 ? 96 : p === 1 ? 66 : 44, background: p === 0 ? "var(--gold)" : undefined }}>{p + 1}</div>
+                    style={{ height: shape.blocks[p] ?? 44, background: p === 0 ? "var(--gold)" : undefined }}>{p + 1}</div>
                 </div>
               ))}
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="podium-actions mt-6 grid grid-cols-2 gap-3">
               <Button onClick={start} className="cartoon-btn h-auto bg-primary text-primary-foreground py-3 font-display text-xl">Race again</Button>
               <Button variant="secondary" onClick={() => setPhase("setup")} className="cartoon-btn h-auto py-3 font-display text-xl">Edit choices</Button>
             </div>

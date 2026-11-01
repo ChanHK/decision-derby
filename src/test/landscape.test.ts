@@ -5,7 +5,9 @@ import {
   canRaceHorizontally,
   fitScale,
   isRotated,
+  podiumShape,
   showGate,
+
   trackHeight,
 } from "@/lib/landscape";
 
