@@ -5,7 +5,7 @@ import { StartingGate } from "@/components/StartingGate";
 import { Button } from "@/components/ui/button";
 import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import { RaceSound } from "@/lib/race-sound";
-import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, type HorseState } from "@/lib/race";
+import { PERSONALITIES, SPRINT_AT, STATE_INFO, bipedDone, burnoutState, chaserState, durationFor, rollBiped, forwardCamera, randomState, speedFor, shouldBump, draftBoost, RIVAL_LINES, type HorseState } from "@/lib/race";
 
 export const Route = createFileRoute("/")({
   head: () => ({
