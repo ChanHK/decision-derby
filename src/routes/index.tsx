@@ -295,17 +295,21 @@ function Index() {
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
         const dir = h.reverse && PANIC_POOL.includes(h.state) ? -1 : 1;
         h.x = Math.max(START - 40, h.x + v * dir * dt);
-        if (h.x >= FINISH) {
-          // climax: the first nose over the line freezes everyone else
+        if (h.x >= FINISH && h.finish === undefined) {
+          // every horse runs through the line; rankings come from finish order
           h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false; h.reverse = false;
-          soundRef.current?.syncRace([], false);
-          soundRef.current?.play("victory");
-          const fin = [i, ...hs.map((_, k) => k).filter((k) => k !== i).sort((a, b) => hs[b]!.x - hs[a]!.x)];
-          setOrder(fin);
-          setHorses(hs.map((x) => ({ ...x })));
-          setPhase("climax");
-          return;
+          if (!hs.some((o, k) => k !== i && o.finish !== undefined)) soundRef.current?.play("victory");
         }
+        if (h.finish !== undefined) h.x = Math.min(TRACK - 320, h.x);
+      }
+      if (hs.every((h) => h.finish !== undefined)) {
+        // all horses are home: rank by finish time, then celebrate
+        soundRef.current?.syncRace([], false);
+        const fin = hs.map((_, k) => k).sort((a, b) => hs[a]!.finish! - hs[b]!.finish!);
+        setOrder(fin);
+        setHorses(hs.map((x) => ({ ...x })));
+        setPhase("climax");
+        return;
       }
       soundRef.current?.syncRace(hs.map((h) => h.state), true);
       setHorses(hs.map((h) => ({ ...h })));
@@ -324,21 +328,12 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  // climax: winner walks forward at 150%, losers stay frozen, then the podium appears
+  // climax: every horse has crossed the line; hold the scene, then the podium appears
   useEffect(() => {
     if (phase !== "climax") return;
-    let raf = 0; let last = performance.now();
-    const w = order[0];
-    const step = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      const h = w !== undefined ? hRef.current[w] : undefined;
-      if (h) { h.x = Math.min(TRACK - 320, h.x + 60 * dt); setHorses(hRef.current.map((x) => ({ ...x }))); }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
     const id = setTimeout(() => setPhase("done"), 3200);
-    return () => { cancelAnimationFrame(raf); clearTimeout(id); };
-  }, [phase, order]);
+    return () => clearTimeout(id);
+  }, [phase]);
 
   const setupScreen = (
     <main className="h-full grass-bg flex p-4">
