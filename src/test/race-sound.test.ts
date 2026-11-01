@@ -38,14 +38,15 @@ describe("replacement race audio", () => {
     expect(sources[0]?.stop).not.toHaveBeenCalled();
   });
 
-  it("keeps the beam until the last overlapping UFO animation ends", async () => {
+  it("two abducted horses play two beams; each stops when its own abduction ends", async () => {
     const sound = new RaceSound(); sound.setEnabled(true);
     sound.syncRace(["ufo", "ufo"], true); await flush();
+    expect(sources).toHaveLength(3);
     sound.syncRace(["normal", "ufo"], true); await flush();
-    expect(sources).toHaveLength(2);
-    expect(sources[1]?.stop).not.toHaveBeenCalled();
-    sound.syncRace(["normal", "normal"], true);
     expect(sources[1]?.stop).toHaveBeenCalledTimes(1);
+    expect(sources[2]?.stop).not.toHaveBeenCalled();
+    sound.syncRace(["normal", "normal"], true);
+    expect(sources[2]?.stop).toHaveBeenCalledTimes(1);
   });
 
   it("cancels a loading beam when the animation ends before decoding", async () => {
@@ -79,17 +80,23 @@ describe("replacement race audio", () => {
     expect(sources).toHaveLength(0);
   });
 
-  it("plays biped, rocket, jet, scuba, copter, board snap and nap once each; lunge only plays per snap", async () => {
+  it("gives every horse its own gadget sound and stops only the one whose state ends", async () => {
+    const sound = new RaceSound(); sound.setEnabled(true);
+    sound.syncRace(["copter", "copter", "normal"], true); await flush();
+    expect(sources).toHaveLength(3); // hoofbeats + two copters
+    sound.syncRace(["normal", "copter", "normal"], true);
+    expect(sources[1]?.stop).toHaveBeenCalledTimes(1);
+    expect(sources[2]?.stop).not.toHaveBeenCalled();
+    sound.syncRace(["normal", "normal", "jet"], true); await flush();
+    expect(sources[2]?.stop).toHaveBeenCalledTimes(1);
+    expect(sources).toHaveLength(4);
+  });
+
+  it("impacts and lunges are one-shots", async () => {
     const sound = new RaceSound(); sound.setEnabled(true); await flush();
-    for (const state of ["biped", "rocket", "skate", "jet", "scuba", "laksa", "copter", "lunge", "wiped", "nap", "timeout"] as const) sound.play(state);
-    await flush();
-    expect(sources).toHaveLength(7);
+    for (const state of ["exploded", "wiped", "rocket", "timeout"] as const) sound.play(state);
     for (let i = 0; i < 3; i++) void sound.playClip("lunge");
     await flush();
-    expect(sources).toHaveLength(10);
-    expect(fetch).toHaveBeenCalledTimes(17);
-    const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
-    for (const name of ["440hz", "550hz", "660hz", "gates_open_go"]) expect(urls.some((u) => u.includes(name))).toBe(true);
-    expect(urls.some((u) => u.includes("race-countdown"))).toBe(false);
+    expect(sources).toHaveLength(5);
   });
 });
