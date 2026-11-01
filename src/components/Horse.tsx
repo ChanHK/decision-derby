@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { HorseState } from "@/lib/race";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -75,6 +75,25 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
       fnU: -55 * arc, fnL: 100 * arc, ffU: -45 * arc, ffL: 95 * arc,
       hnU: 35 * arc, hnL: -10 * arc, hfU: 42 * arc, hfL: -14 * arc,
       t1: 30 + 10 * arc, t2: 15, t3: 10, ear: -20, blink,
+    };
+  }
+  if (anim === "biped") {
+    // Stand up on the hind legs and run like a person, front hooves pumping like arms.
+    const w = TAU * p;
+    const lean = -58;
+    const leg = (off: number): [number, number] => {
+      const k = TAU * (p + off);
+      return [-lean + 38 * s(k), -8 - 70 * Math.max(0, s(k - 1.1))];
+    };
+    const [hnU, hnL] = leg(0);
+    const [hfU, hfL] = leg(0.5);
+    const arm = (off: number): [number, number] => [-lean - 30 + 38 * s(TAU * (p + off)), -95];
+    const [fnU, fnL] = arm(0.5);
+    const [ffU, ffL] = arm(0);
+    return {
+      y: -24 - 5 * Math.abs(s(w)), body: lean + 3 * s(w * 2), neck: 52, head: 8 + 4 * s(w * 2),
+      fnU, fnL, ffU, ffL, hnU, hnL, hfU, hfL,
+      t1: 10 + 10 * s(w * 2), t2: 12 * s(w * 2 + 0.8), t3: 14 * s(w * 2 + 1.6), ear: -30, blink,
     };
   }
   if (anim === "sprint") {
@@ -180,7 +199,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       const a = animRef.current, st = stateRef.current;
-      const rate = a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
+      const rate = a === "biped" ? 3.6 : a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" || st === "winded" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
       let j = -1;
       if (jumpStart.current >= 0) {

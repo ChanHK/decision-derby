@@ -32,3 +32,17 @@ describe("race behavior", () => {
     expect(speedFor(graze, 1, 190, 0.5)).toBe(0);
   });
 });
+
+import { bipedDone, rollBiped, speedFor as sp } from "@/lib/race";
+describe("two-legged run", () => {
+  it("only the last-place horse can start running on two legs", () => {
+    expect(rollBiped(() => 0, true, 0.5)).toBe(true);
+    expect(rollBiped(() => 0, false, 0.5)).toBe(false);
+  });
+  it("stops once it passes the horse ahead, then moves slowly", () => {
+    expect(bipedDone(900, 950)).toBe(false);
+    expect(bipedDone(951, 950)).toBe(true);
+    expect(sp("winded", 0, 200)).toBeLessThan(200);
+    expect(sp("winded", 0, 200)).toBeGreaterThan(0);
+  });
+});

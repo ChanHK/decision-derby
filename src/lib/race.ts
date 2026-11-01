@@ -1,4 +1,4 @@
-export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies";
+export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded";
 
 export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubble?: string }> = {
   normal: { label: "Gallop", emoji: "🐎" },
@@ -11,6 +11,8 @@ export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubb
   graze: { label: "Snack break", emoji: "🌱", bubble: "Ooh, grass!" },
   nap: { label: "Power nap", emoji: "😴", bubble: "Zzz..." },
   zoomies: { label: "Zoomies", emoji: "🌀", bubble: "WHEEE!" },
+  biped: { label: "Two legs!", emoji: "🏃", bubble: "ON YOUR LEFT!" },
+  winded: { label: "Job done", emoji: "😮‍💨", bubble: "My work here is done." },
 };
 
 /** Progress (0..1) after which horses enter the final sprint. */
@@ -36,6 +38,8 @@ export function speedFor(state: HorseState, t: number, base: number, progress = 
     case "stumble": return base * 0.2;
     case "graze": return 0;
     case "nap": return 0;
+    case "biped": return base * 1.9;
+    case "winded": return base * 0.45;
     case "zoomies": return base * (1.2 + Math.sin(t * 9) * 1.1);
     default: return base * sprint;
   }
@@ -68,4 +72,17 @@ export function durationFor(state: HorseState): number {
   if (state === "wrongway" || state === "moonwalk") return 1.6;
   if (state === "nap") return 1.8;
   return 2.2;
+}
+
+/** Chance per roll that the last-place horse stands up and runs on two legs. */
+export const BIPED_CHANCE = 0.35;
+
+/** Only the trailing horse (with someone ahead to catch) can switch to a two-legged run. */
+export function rollBiped(rand: () => number, isLast: boolean, progress: number): boolean {
+  return isLast && progress >= 0.1 && progress < 0.95 && rand() < BIPED_CHANCE;
+}
+
+/** The two-legged run ends the moment the horse gets ahead of the horse it was chasing. */
+export function bipedDone(myX: number, targetX: number): boolean {
+  return myX > targetX;
 }
