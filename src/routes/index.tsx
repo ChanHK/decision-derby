@@ -7,7 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
-import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, rubberBandActive, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -31,7 +31,7 @@ const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "climax" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number; lastBoost?: HorseState };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number; lastBoost?: HorseState; immuneUntil?: number; failAt?: number; reverse?: boolean };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -156,13 +156,17 @@ function Index() {
   useEffect(() => {
     if (phase !== "race") return;
     soundRef.current?.syncRace(hRef.current.map((h) => h.state), true);
-    let raf = 0; let last = performance.now(); let t = 0; let camR = -1;
+    let raf = 0; let last = performance.now(); let t = 0; let camR = -1; let nextTick = 0;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       const hs = hRef.current;
       const ranked = [...hs].sort((a, b) => b.x - a.x);
       const leader = ranked[0]!, lastH = ranked[ranked.length - 1]!;
-      const rubber = rubberBandActive(leader.x, lastH.x, vw);
+      const trackW = FINISH - START;
+      // elastic engine: one roll per second, chance grows with the leader-to-last gap
+      let fire = false;
+      if (t >= nextTick) { nextTick = t + DIRECTOR_TICK; fire = Math.random() < triggerChance(leader.x, lastH.x, trackW); }
+      const second = ranked[1];
       for (let i = 0; i < hs.length; i++) {
         const h = hs[i]!;
         const prog = (h.x - START) / (FINISH - START);
@@ -185,31 +189,44 @@ function Index() {
           if (h.state !== "normal") {
             // states expire; ridden mounts still blow up mid-race
             const crash = h.state === "rocket" ? "exploded" : h.state === "skate" ? "wiped" : "normal";
-            h.state = crash; h.line = undefined; h.panic = false;
+            h.state = crash; h.line = undefined; h.panic = false; h.reverse = false; h.failAt = undefined;
+            if (crash === "normal") h.immuneUntil = t + IMMUNE_SECONDS;
             h.next = t + (crash === "normal" ? 0.6 + Math.random() * 0.6 : durationFor(crash));
             if (crash !== "normal") { soundRef.current?.play(crash); if (crash === "exploded") punchShake(); }
-          } else if (act === "rubber" && rubber) {
+          } else if (act === "rubber" && fire && !isImmune(h.immuneUntil, t)) {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
             else if (h === lastH) { s = underdogPanic(Math.random, h.lastBoost); line = SELF_SPEED.includes(s) ? STATE_INFO[s].bubble : pick(PANIC_LINES); h.panic = true; }
             else if (rank >= 1 && Math.random() < 0.5) { s = midPackChaos(Math.random, h.lastBoost); if (SELF_SPEED.includes(s)) line = STATE_INFO[s].bubble; }
             if (PANIC_POOL.includes(s)) h.lastBoost = s;
+            h.reverse = reverseBoost(Math.random, s);
+            if (h === lastH && falseHope(Math.random, s)) h.failAt = t + FALSE_HOPE_DELAY;
+            if (h === leader && second && second !== h && second.state === "normal" && !isImmune(second.immuneUntil, t) && pileUp(s, h.x, second.x, trackW)) {
+              second.state = "stumble"; second.line = "PILE-UP!"; second.next = t + durationFor("stumble");
+            }
             if (s === "lunge") h.lungeAt = t + 0.2;
             h.state = s; h.line = line;
             h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
             if (s !== "normal") { soundRef.current?.play(s); if (s === "glassdoor") punchShake(); }
           }
         }
+        if (h.failAt !== undefined && t >= h.failAt) {
+          // false hope: the underdog's boost fails almost immediately
+          const fail = boostFailure(h.state);
+          h.failAt = undefined; h.reverse = false; h.panic = false; h.line = undefined;
+          if (FALSE_HOPE_STATES.includes(h.state)) { h.state = fail; h.next = t + durationFor(fail); soundRef.current?.play(fail); if (fail === "exploded") punchShake(); }
+        }
         if (h.state === "exploded") h.burnt = true;
         if (h.state === "wiped") h.bruised = true;
         const sliding = act === "finish" && (h.state === "exploded" || h.state === "wiped");
         if (h.state === "lunge" && h.lungeAt !== undefined && t >= h.lungeAt) {
           // hold the deep lunge, then snap forward instantly
-          h.x += vw * LUNGE_SNAP; h.lungeAt += LUNGE_EVERY;
+          h.x += vw * LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
           void soundRef.current?.playClip("lunge", { volume: 0.7 }); // one sound per lunge
         }
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
-        h.x = Math.max(START - 40, h.x + v * dt);
+        const dir = h.reverse && PANIC_POOL.includes(h.state) ? -1 : 1;
+        h.x = Math.max(START - 40, h.x + v * dir * dt);
         if (h.x >= FINISH) {
           // climax: the first nose over the line freezes everyone else
           h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false;
@@ -488,13 +505,13 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const boost = st === "jet" || st === "scuba" || st === "laksa" || st === "copter" || st === "lunge";
   const curse = st === "timeout" || st === "standby" || st === "smash" || st === "glassdoor" || st === "soup" || st === "tactile";
   const anim = curse || boost ? st : st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
-  const flip = st === "wrongway";
+  const flip = st === "wrongway" || (!!h.reverse && PANIC_POOL.includes(st));
   const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
     <div className={`relative ${frozen ? "fx-frozen" : ""}`} style={champ ? { transform: "scale(1.5)", transformOrigin: "50% 100%", transition: "transform .4s ease-out" } : undefined}>
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
-        <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
+        <div className={wrap} style={{ transform: [flip ? "scaleX(-1)" : "", st === "rocket" ? "rotate(-5deg)" : ""].join(" ").trim() || undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
           <div style={{ transform: st === "timeout" ? "perspective(700px) rotateX(78deg)" : undefined, transformOrigin: "50% 92%", transition: "transform 1.1s ease-in" }}>
             <Horse color={st === "laksa" ? "var(--destructive)" : COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
           </div>
