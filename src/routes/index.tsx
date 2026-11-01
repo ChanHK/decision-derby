@@ -347,7 +347,7 @@ function Index() {
           <div className="flex justify-end mb-2">{soundToggle}</div>
           <h1 className="setup-title font-display text-5xl text-center text-primary">Derby Decider</h1>
           <p className="setup-lead text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
-          <div className={`setup-rows mt-6 ${choices.length > 6 ? "setup-grid" : "space-y-3"}`}>
+          <div className={`setup-rows mt-6 ${choices.length > 6 ? "setup-rows-compact" : ""}`}>
             {choices.map((c, i) => (
               <div key={i} className="setup-row flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full border-[3px] border-ink shrink-0" style={{ background: COATS[i] }} />
@@ -550,7 +550,7 @@ function Index() {
       {phase === "done" && winner !== undefined && (
         <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-[200]">
           <Confetti />
-          <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-[92dvh] overflow-y-auto">
+          <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-full overflow-y-auto">
             <div className="flex justify-end mb-2">{soundToggle}</div>
             <p className="podium-lead font-bold text-muted-foreground">The horses have decided…</p>
             <h2 className="podium-title font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
