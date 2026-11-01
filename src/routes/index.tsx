@@ -316,14 +316,8 @@ function Index() {
             <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
             <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
             <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
-            {/* winner's circle beyond the finish */}
-            <div className="absolute top-[52px] z-[2] rounded-[50%] border-[6px] border-dashed border-accent bg-accent/15 pointer-events-none" style={{ left: FINISH + 480, width: 520, height: choices.length * 150 }} />
-            <div className="absolute top-[2px] z-20 font-display text-2xl text-ink bg-gate border-[3px] border-ink px-3 rounded-lg -rotate-3 shadow-[0_4px_0_var(--color-ink)]" style={{ left: FINISH + 600 }}>🏆 WINNER'S CIRCLE</div>
-            {choices.map((_, i) => (
-              <span key={i} className="absolute text-3xl z-20 pointer-events-none" style={{ top: 52 + i * 150 + 110, left: FINISH + 420 + ((i * 173) % 500) }}>{["🌷", "🎈", "🌻", "🎉", "🥕"][i]}</span>
-            ))}
             {horses.map((h, i) => (
-              <div key={i} className="absolute z-[5]" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
+              <div key={i} className="absolute z-30" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
                 <HorseActor h={h} i={i} phase={phase} />
               </div>
             ))}
