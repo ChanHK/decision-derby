@@ -136,7 +136,9 @@ function Index() {
       for (let i = 0; i < hs.length; i++) {
         const h = hs[i]!;
         const prog = (h.x - START) / (FINISH - START);
-        const act = directorPhase(prog);
+        const leadP = (leader.x - START) / (FINISH - START);
+        // chaos phase follows the leader so trailing horses still get gadgets; final purge stays per-horse
+        const act = directorPhase(prog) === "finish" ? "finish" : directorPhase(leadP) === "setup" ? "setup" : "rubber";
         const rank = ranked.indexOf(h);
         if (act === "finish") {
           const purged = crashFinish(finishPurge(h.state), prog);
@@ -157,7 +159,7 @@ function Index() {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_LINES); }
             else if (h === lastH) { s = underdogPanic(Math.random); line = pick(PANIC_LINES); h.panic = true; }
-            else if ((rank === 1 || rank === 2) && Math.random() < 0.5) s = midPackChaos(Math.random);
+            else if (rank >= 1 && Math.random() < 0.5) s = midPackChaos(Math.random);
             h.state = s; h.line = line;
             h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
             if (s !== "normal") soundRef.current?.play(s);
