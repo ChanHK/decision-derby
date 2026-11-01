@@ -1,34 +1,35 @@
 import type { HorseState } from "./race";
-import launch from "@/assets/race-launch.mp3.asset.json";
-import tone3 from "@/assets/440hz.mp3.asset.json";
-import tone2 from "@/assets/550hz.mp3.asset.json";
-import tone1 from "@/assets/660hz.mp3.asset.json";
-import go from "@/assets/gates_open_go.mp3.asset.json";
-import hoofbeats from "@/assets/race-hoofbeats.mp3.asset.json";
-import ufo from "@/assets/race-ufo.mp3.asset.json";
-import detonation from "@/assets/race-detonation.mp3.asset.json";
-import decision from "@/assets/race-decision.mp3.asset.json";
-import rocket from "@/assets/race-rocket.mp3.asset.json";
-import scuba from "@/assets/race-scuba.mp3.asset.json";
-import biped from "@/assets/race-biped.mp3.asset.json";
-import copter from "@/assets/race-copter.mp3.asset.json";
-import jet from "@/assets/race-jet.mp3.asset.json";
-import lunge from "@/assets/race-lunge.mp3.asset.json";
-import wiped from "@/assets/race-wiped.mp3.asset.json";
-import nap from "@/assets/race-nap.mp3.asset.json";
-import graze from "@/assets/race-graze.mp3.asset.json";
-import stumble from "@/assets/race-stumble.mp3.asset.json";
-import tactile from "@/assets/race-tactile.mp3.asset.json";
-import turbo from "@/assets/race-turbo.mp3.asset.json";
-import glassdoor from "@/assets/race-glassdoor.mp3.asset.json";
-import soup from "@/assets/race-soup.mp3.asset.json";
+// Audio is bundled with the app (not CDN pointers) so self-hosted builds, e.g. Vercel, serve it too.
+import launch from "@/assets/race-launch.mp3";
+import tone3 from "@/assets/440hz.mp3";
+import tone2 from "@/assets/550hz.mp3";
+import tone1 from "@/assets/660hz.mp3";
+import go from "@/assets/gates_open_go.mp3";
+import hoofbeats from "@/assets/race-hoofbeats.mp3";
+import ufo from "@/assets/race-ufo.mp3";
+import detonation from "@/assets/race-detonation.mp3";
+import decision from "@/assets/race-decision.mp3";
+import rocket from "@/assets/race-rocket.mp3";
+import scuba from "@/assets/race-scuba.mp3";
+import biped from "@/assets/race-biped.mp3";
+import copter from "@/assets/race-copter.mp3";
+import jet from "@/assets/race-jet.mp3";
+import lunge from "@/assets/race-lunge.mp3";
+import wiped from "@/assets/race-wiped.mp3";
+import nap from "@/assets/race-nap.mp3";
+import graze from "@/assets/race-graze.mp3";
+import stumble from "@/assets/race-stumble.mp3";
+import tactile from "@/assets/race-tactile.mp3";
+import turbo from "@/assets/race-turbo.mp3";
+import glassdoor from "@/assets/race-glassdoor.mp3";
+import soup from "@/assets/race-soup.mp3";
 
 export type Clip = "launch" | "tone3" | "tone2" | "tone1" | "go" | "hoofbeats" | "ufo" | "detonation" | "decision" | "rocket" | "scuba" | "biped" | "copter" | "jet" | "lunge" | "wiped" | "nap" | "graze" | "stumble" | "tactile" | "turbo" | "glassdoor" | "soup";
 const CLIPS: Record<Clip, string> = {
-  launch: launch.url, tone3: tone3.url, tone2: tone2.url, tone1: tone1.url, go: go.url,
-  hoofbeats: hoofbeats.url, ufo: ufo.url, detonation: detonation.url, decision: decision.url,
-  rocket: rocket.url, scuba: scuba.url, biped: biped.url, copter: copter.url, jet: jet.url, lunge: lunge.url,
-  wiped: wiped.url, nap: nap.url, graze: graze.url, stumble: stumble.url, tactile: tactile.url, turbo: turbo.url, glassdoor: glassdoor.url, soup: soup.url,
+  launch, tone3, tone2, tone1, go,
+  hoofbeats, ufo, detonation, decision,
+  rocket, scuba, biped, copter, jet, lunge,
+  wiped, nap, graze, stumble, tactile, turbo, glassdoor, soup,
 };
 
 const STATE_LOOPS: Partial<Record<HorseState, Clip>> = {
