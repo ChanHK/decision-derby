@@ -257,7 +257,8 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} aria-label="Race track" className="race-scroll relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+        <div ref={viewRef} aria-label="Race track" tabIndex={0} className="race-scroll relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+          onKeyDown={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) pauseFollow(); }}
           onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
           onPointerDown={(e) => {
             pauseFollow();
@@ -326,6 +327,7 @@ function Index() {
         <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-20">
           <Confetti />
           <div className="cartoon-card relative w-full max-w-lg p-6 text-center">
+            <div className="flex justify-end mb-2">{soundToggle}</div>
             <p className="font-bold text-muted-foreground">The horses have decided…</p>
             <h2 className="font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
             <div className="flex items-end justify-center gap-3 mt-6">
