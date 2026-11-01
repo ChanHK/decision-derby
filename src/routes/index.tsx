@@ -144,7 +144,8 @@ function Index() {
         } else if (h.state === "biped") {
           // keep running until it passes the horse it is chasing
         } else if (t > h.next && h.state === "normal" && rollBiped(Math.random, isLast, prog)) {
-          const ahead = unfinished.filter((u) => u.x > h.x).sort((a, b) => a.x - b.x)[0];
+          const aheadList = unfinished.filter((u) => u.x > h.x).sort((a, b) => a.x - b.x);
+          const ahead = aheadList[Math.min(1, aheadList.length - 1)]; // overtake two horses
           if (ahead) { h.state = "biped"; h.chase = hRef.current.indexOf(ahead); h.next = t + 99; soundRef.current?.play("biped"); }
         } else if (t > h.next) {
           if (h.state !== "normal") {
@@ -325,7 +326,7 @@ function Index() {
             ))}
           </div>
           {phase === "countdown" && (
-            <div className="sticky left-0 top-0 -mt-[100%] h-full w-full z-[100] flex items-center justify-center pointer-events-none" style={{ position: "absolute", left: viewRef.current?.scrollLeft ?? 0 }}>
+            <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <span key={count} className="font-display text-9xl text-accent countdown-pop drop-shadow">{count || "GO!"}</span>
             </div>
           )}
