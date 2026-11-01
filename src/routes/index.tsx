@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Horse } from "@/components/Horse";
+import { StartingGate } from "@/components/StartingGate";
 import { Button } from "@/components/ui/button";
 import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import { RaceSound } from "@/lib/race-sound";
@@ -302,22 +303,18 @@ function Index() {
                 </div>
               );
             })}
-            {/* start gates */}
-            <div className="absolute top-[52px] z-10" style={{ left: START + 212 }}>
-              {choices.map((_, i) => (
-                <div key={i} className="h-[150px] w-4 bg-gate border-x-[3px] border-ink transition-transform duration-500 origin-top"
-                  style={{ transform: phase === "race" || phase === "done" ? "scaleY(0.05)" : "none" }} />
-              ))}
-            </div>
+            {/* starting stalls */}
+            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "done"} />
             {/* finish arch */}
             <div className="absolute top-[52px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
             <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
             <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
             <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
             {/* winner's circle beyond the finish */}
-            <div className="absolute top-[60px] z-0 font-display text-2xl text-ink bg-gate border-[3px] border-ink px-3 rounded-lg -rotate-3" style={{ left: FINISH + 560 }}>🏆 WINNER'S CIRCLE</div>
+            <div className="absolute top-[52px] z-[2] rounded-[50%] border-[6px] border-dashed border-accent bg-accent/15 pointer-events-none" style={{ left: FINISH + 480, width: 520, height: choices.length * 150 }} />
+            <div className="absolute top-[2px] z-20 font-display text-2xl text-ink bg-gate border-[3px] border-ink px-3 rounded-lg -rotate-3 shadow-[0_4px_0_var(--color-ink)]" style={{ left: FINISH + 600 }}>🏆 WINNER'S CIRCLE</div>
             {choices.map((_, i) => (
-              <span key={i} className="absolute text-3xl z-0" style={{ top: 52 + i * 150 + 110, left: FINISH + 420 + ((i * 173) % 500) }}>{["🌷", "🎈", "🌻", "🎉", "🥕"][i]}</span>
+              <span key={i} className="absolute text-3xl z-20 pointer-events-none" style={{ top: 52 + i * 150 + 110, left: FINISH + 420 + ((i * 173) % 500) }}>{["🌷", "🎈", "🌻", "🎉", "🥕"][i]}</span>
             ))}
             {horses.map((h, i) => (
               <div key={i} className="absolute z-[5]" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
