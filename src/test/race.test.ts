@@ -83,11 +83,23 @@ describe("gadget crashes", () => {
   });
 });
 
-import { underdogPanic as up, midPackChaos as mp } from "@/lib/race";
+import { underdogPanic as up, midPackChaos as mp, speedFor, durationFor, LUNGE_EVERY } from "@/lib/race";
 describe("gadget picks", () => {
   it("underdog can pick the hoverboard and rocket", () => {
-    expect(up(() => 0.9)).toBe("skate");
-    expect(up(() => 0.5)).toBe("rocket");
+    expect(up(() => 0.3)).toBe("skate");
+    expect(up(() => 0.2)).toBe("rocket");
+  });
+  it("underdog can pick the five new boosts", () => {
+    expect([0.4, 0.55, 0.7, 0.8, 0.99].map((r) => up(() => r))).toEqual(["jet", "scuba", "laksa", "copter", "lunge"]);
+  });
+  it("boost speeds: jet 3x, scuba 2.5x, laksa 2.5x, copter 2.2x", () => {
+    expect(speedFor("jet", 0, 100)).toBe(300);
+    expect(speedFor("scuba", 0, 100)).toBe(250);
+    expect(speedFor("laksa", 0, 100)).toBe(250);
+    expect(speedFor("copter", 0, 100)).toBeCloseTo(220);
+  });
+  it("court lunge snaps three times", () => {
+    expect(durationFor("lunge") / LUNGE_EVERY).toBeCloseTo(3);
   });
   it("mid-pack can pick gadgets", () => {
     expect(mp(() => 0)).toBe("rocket");

@@ -1,4 +1,4 @@
-export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded" | "rocket" | "ufo" | "skate" | "exploded" | "wiped" | "timeout" | "standby" | "smash" | "glassdoor" | "soup" | "tactile";
+export type HorseState = "normal" | "turbo" | "drunk" | "tired" | "moonwalk" | "wrongway" | "stumble" | "graze" | "nap" | "zoomies" | "biped" | "winded" | "rocket" | "ufo" | "skate" | "exploded" | "wiped" | "timeout" | "standby" | "smash" | "glassdoor" | "soup" | "tactile" | "jet" | "scuba" | "laksa" | "copter" | "lunge";
 
 export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubble?: string }> = {
   normal: { label: "Gallop", emoji: "🐎" },
@@ -24,7 +24,20 @@ export const STATE_INFO: Record<HorseState, { label: string; emoji: string; bubb
   glassdoor: { label: "Glass door!", emoji: "🚪", bubble: "Who cleaned that glass?!" },
   soup: { label: "Soup break", emoji: "🍲", bubble: "Wait, this broth is actually incredible." },
   tactile: { label: "Squishy toy", emoji: "🫧", bubble: "So squishy..." },
+  jet: { label: "Jet engine", emoji: "✈️", bubble: "Cleared for departure!" },
+  scuba: { label: "Scuba torpedo", emoji: "🤿", bubble: "Current is strong today!" },
+  laksa: { label: "Spicy laksa", emoji: "🌶️", bubble: "TOO SPICY TOO SPICY TOO SPICY!" },
+  copter: { label: "Fidget copter", emoji: "🌀", bubble: "Who needs aerodynamics?!" },
+  lunge: { label: "Court lunge", emoji: "🏸", bubble: "Footwork is everything!" },
 };
+
+/** Underdog comeback boosts (picked evenly). */
+export const PANIC_POOL: HorseState[] = ["biped", "rocket", "skate", "jet", "scuba", "laksa", "copter", "lunge"];
+/** Boosts that move by their own speed instead of the flat panic multiplier. */
+export const SELF_SPEED: HorseState[] = ["jet", "scuba", "laksa", "copter", "lunge"];
+/** Court lunge: seconds per lunge and how far each snap jumps (share of screen width). */
+export const LUNGE_EVERY = 0.6;
+export const LUNGE_SNAP = 0.2;
 
 /** The six Leader's Curse penalties: each halts the runaway leader with a puppet-rig gag. */
 export const LEADER_CURSES: HorseState[] = ["timeout", "standby", "smash", "glassdoor", "soup", "tactile"];
@@ -69,6 +82,11 @@ export function speedFor(state: HorseState, t: number, base: number, progress = 
     case "timeout": case "standby": case "smash": case "glassdoor": case "tactile": return 0;
     case "soup": return base * 0.12;
     case "wiped": return base * 0.1;
+    case "jet": return base * 3;
+    case "scuba": return base * 2.5;
+    case "laksa": return base * 2.5;
+    case "copter": return base * 2.2;
+    case "lunge": return 0;
     case "zoomies": return base * (1.2 + Math.sin(t * 9) * 1.1);
     default: return base * sprint;
   }
@@ -98,6 +116,8 @@ export function forwardCamera(current: number, target: number, maximum: number):
 /** Seconds a special status lasts before the horse snaps back to normal. */
 export function durationFor(state: HorseState): number {
   if (state === "ufo") return 2.2;
+  if (state === "lunge") return LUNGE_EVERY * 3;
+  if (state === "jet" || state === "scuba" || state === "laksa" || state === "copter") return 1.8;
   if (state === "smash") return 3;
   if (state === "timeout" || state === "standby" || state === "glassdoor" || state === "soup" || state === "tactile") return 2.6;
   if (state === "exploded") return 2;
@@ -179,8 +199,7 @@ export function leaderCurse(rand: () => number): HorseState {
   return LEADER_CURSES[Math.min(LEADER_CURSES.length - 1, Math.floor(rand() * LEADER_CURSES.length))]!;
 }
 export function underdogPanic(rand: () => number): HorseState {
-  const r = rand();
-  return r < 0.34 ? "biped" : r < 0.67 ? "rocket" : "skate";
+  return PANIC_POOL[Math.min(PANIC_POOL.length - 1, Math.floor(rand() * PANIC_POOL.length))]!;
 }
 export function midPackChaos(rand: () => number): HorseState {
   const list: HorseState[] = ["rocket", "skate", "drunk", "moonwalk", "wrongway"];
