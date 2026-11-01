@@ -155,9 +155,12 @@ export function rubberBandActive(leaderX: number, lastX: number, screenWidth: nu
   return leaderX - lastX > screenWidth * RUBBER_GAP;
 }
 export function leaderCurse(rand: () => number): HorseState { return rand() < 0.5 ? "nap" : "ufo"; }
-export function underdogPanic(rand: () => number): HorseState { return rand() < 0.5 ? "biped" : "rocket"; }
+export function underdogPanic(rand: () => number): HorseState {
+  const r = rand();
+  return r < 0.34 ? "biped" : r < 0.67 ? "rocket" : "skate";
+}
 export function midPackChaos(rand: () => number): HorseState {
-  const list: HorseState[] = ["drunk", "moonwalk", "wrongway"];
+  const list: HorseState[] = ["rocket", "skate", "drunk", "moonwalk", "wrongway"];
   return list[Math.floor(rand() * list.length)] ?? "drunk";
 }
 /** Final stretch: stalls/gags are purged so everyone sprints; mounts and crashes stay. */
