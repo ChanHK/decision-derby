@@ -55,6 +55,10 @@ export const CURSE_BUBBLES: Partial<Record<HorseState, string[]>> = {
 /** Progress (0..1) after which horses enter the final sprint. */
 export const SPRINT_AT = 0.75;
 
+/** How many decisions the field can hold, and the smallest race worth running. */
+export const MIN_CHOICES = 2;
+export const MAX_CHOICES = 10;
+
 /** Each horse gets its own personality: distinct base speed + how much it surges in the sprint. */
 export const PERSONALITIES = [
   { name: "Early bird", base: 190, kick: 1.15 },
@@ -62,7 +66,19 @@ export const PERSONALITIES = [
   { name: "Late charger", base: 150, kick: 1.8 },
   { name: "Plodder", base: 135, kick: 1.6 },
   { name: "Wildcard", base: 165, kick: 1.45 },
+  { name: "Nose bandit", base: 185, kick: 1.2 },
+  { name: "Metronome", base: 160, kick: 1.5 },
+  { name: "Comeback cat", base: 145, kick: 1.9 },
+  { name: "Hay burner", base: 175, kick: 1.3 },
+  { name: "Dust kicker", base: 155, kick: 1.7 },
 ];
+
+/** 1st, 2nd, 3rd, 4th ... 10th — the tote board reads a rank for every horse. */
+export function ordinal(rank: number): string {
+  const n = rank + 1;
+  const teens = n % 100 >= 11 && n % 100 <= 13;
+  return `${n}${teens ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+}
 
 export function speedFor(state: HorseState, t: number, base: number, progress = 0, kick = 1.45): number {
   const sprint = progress >= SPRINT_AT ? kick + (progress - SPRINT_AT) * 1.2 : 1;

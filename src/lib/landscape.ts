@@ -8,6 +8,8 @@ export const TRACK_CHROME = 116 + 26 + 18;
 export const COLUMN_CHROME = 44;
 /** Smallest scale we will shrink the track to; below this the horses are unreadable. */
 export const MIN_FIT = 0.4;
+/** With a full field even a sideways phone has to give; lanes on screen beat big horses. */
+export const MIN_FIT_FLOOR = 0.15;
 
 /** World height of the whole track for a given number of lanes. */
 export function trackHeight(lanes: number): number {
@@ -15,13 +17,24 @@ export function trackHeight(lanes: number): number {
 }
 
 /**
+ * The smallest scale worth using for this many lanes. A five-horse field keeps the
+ * old readability floor; a bigger field trades horse size for "every lane visible".
+ * Six or more lanes must be able to shrink to exactly what a sideways phone has left.
+ */
+export function minFit(lanes: number): number {
+  const n = Math.max(1, lanes);
+  if (n <= 5) return MIN_FIT;
+  return Math.max(MIN_FIT_FLOOR, (MIN_FIT * 4) / n);
+}
+
+/**
  * Uniform scale that makes the track fit the height we have.
  * Never upscales: a tall window keeps the track at its natural size.
  */
-export function fitScale(availH: number, trackH: number): number {
+export function fitScale(availH: number, trackH: number, floor = MIN_FIT): number {
   if (!Number.isFinite(availH) || !Number.isFinite(trackH) || availH <= 0 || trackH <= 0) return 1;
   const f = availH / trackH;
-  return f >= 1 ? 1 : Math.max(MIN_FIT, f);
+  return f >= 1 ? 1 : Math.max(floor, f);
 }
 
 /** True when the race can be shown across the screen: already sideways, or forced sideways. */

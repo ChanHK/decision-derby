@@ -71,3 +71,27 @@ describe("podiumShape", () => {
     expect(tall.blocks).toEqual([96, 66, 44]);
   });
 });
+
+import { MIN_FIT_FLOOR, minFit } from "@/lib/landscape";
+describe("a full field of ten", () => {
+  it("makes room for ten lanes plus the sky, crowd and rails", () => {
+    expect(trackHeight(10)).toBe(160 + 10 * 150);
+  });
+  it("keeps the old readability floor for a small field", () => {
+    expect(minFit(2)).toBe(MIN_FIT);
+    expect(minFit(5)).toBe(MIN_FIT);
+  });
+  it("trades horse size for lane count once the field grows", () => {
+    expect(minFit(6)).toBeCloseTo(0.4 * 4 / 6, 5);
+    expect(minFit(10)).toBeCloseTo(0.16, 5);
+    expect(minFit(10)).toBeGreaterThan(MIN_FIT_FLOOR);
+    expect(minFit(40)).toBe(MIN_FIT_FLOOR);
+  });
+  it("shrinks a ten-lane track all the way onto a sideways phone", () => {
+    // landscape phone: ~393px of screen, minus the header and the mini-map strip
+    const avail = 393 - 60 - COLUMN_CHROME;
+    const fit = fitScale(avail, trackHeight(10), minFit(10));
+    expect(fit).toBeCloseTo(avail / trackHeight(10), 5);
+    expect(fit * trackHeight(10)).toBeLessThanOrEqual(avail + 0.5);
+  });
+});

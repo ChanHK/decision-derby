@@ -8,9 +8,9 @@ import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
 import { LandscapeGate, Stage, useLandscape, useShortScreen } from "@/components/Stage";
-import { COLUMN_CHROME, fitScale, podiumShape, showGate, trackHeight } from "@/lib/landscape";
+import { COLUMN_CHROME, fitScale, minFit, podiumShape, showGate, trackHeight } from "@/lib/landscape";
 
-import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, MAX_CHOICES, MIN_CHOICES, ordinal, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Derby Decider — Let horses make your decision" },
-      { name: "description", content: "Enter up to 5 choices and watch cartoon horses race with surprise events to pick your decision." },
+      { name: "description", content: "Enter up to 10 choices and watch cartoon horses race with surprise events to pick your decision." },
       { property: "og:title", content: "Derby Decider" },
       { property: "og:description", content: "A horse race that makes your decisions for you." },
       { property: "og:type", content: "website" },
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)"];
+const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)", "var(--horse-6)", "var(--horse-7)", "var(--horse-8)", "var(--horse-9)", "var(--horse-10)"];
 const TRACK = 4700; // world px
 const FINISH = 3600;
 const START = 120;
@@ -123,7 +123,7 @@ function Index() {
   useEffect(() => {
     const el = colRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const m = () => setFit(fitScale(el.clientHeight - COLUMN_CHROME, trackH));
+    const m = () => setFit(fitScale(el.clientHeight - COLUMN_CHROME, trackH, minFit(choices.length)));
     m();
     const ro = new ResizeObserver(m);
     ro.observe(el);
@@ -341,33 +341,36 @@ function Index() {
   }, [phase, order]);
 
   const setupScreen = (
-    <main className="h-full grass-bg flex p-4 overflow-y-auto">
-      <div className="setup-card cartoon-card w-full max-w-lg p-6 m-auto">
+    <main className="h-full grass-bg flex p-4">
+      <div className="setup-card cartoon-card w-full max-w-lg p-6 m-auto max-h-full overflow-y-auto">
 
           <div className="flex justify-end mb-2">{soundToggle}</div>
           <h1 className="setup-title font-display text-5xl text-center text-primary">Derby Decider</h1>
           <p className="setup-lead text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
-          <div className="setup-rows mt-6 space-y-3">
+          <div className={`setup-rows mt-6 ${choices.length > 6 ? "setup-rows-compact" : ""}`}>
             {choices.map((c, i) => (
               <div key={i} className="setup-row flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full border-[3px] border-ink shrink-0" style={{ background: COATS[i] }} />
                 <input value={c} maxLength={30} placeholder={`Choice ${i + 1}`}
                   onChange={(e) => setChoices(choices.map((x, j) => (j === i ? e.target.value : x)))}
                   className="flex-1 rounded-xl border-[3px] border-ink bg-card px-3 py-2 font-bold outline-none focus:ring-4 ring-accent" />
-                {choices.length > 2 && (
+                {choices.length > MIN_CHOICES && (
                   <button onClick={() => setChoices(choices.filter((_, j) => j !== i))} aria-label="Remove"
                     className="cartoon-btn bg-secondary px-3 py-2">✕</button>
                 )}
               </div>
             ))}
           </div>
-          {choices.length < 5 && (
+          {choices.length < MAX_CHOICES && (
             <button onClick={() => setChoices([...choices, ""])} className="setup-add mt-3 w-full rounded-xl border-[3px] border-dashed border-ink py-2 font-bold text-muted-foreground">+ Add choice</button>
           )}
-          <button disabled={valid.length < 2} onClick={requestStart} className="setup-start cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
+          {choices.length >= MAX_CHOICES && (
+            <p className="setup-add mt-3 w-full text-center text-sm font-bold text-muted-foreground">A full field of {MAX_CHOICES} — that's the track limit.</p>
+          )}
+          <button disabled={valid.length < MIN_CHOICES} onClick={requestStart} className="setup-start cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
             And they're off! 🏁
           </button>
-          {valid.length < 2 && <p className="text-center text-sm mt-2 text-muted-foreground">Enter at least 2 choices.</p>}
+          {valid.length < MIN_CHOICES && <p className="text-center text-sm mt-2 text-muted-foreground">Enter at least {MIN_CHOICES} choices.</p>}
       </div>
     </main>
   );
@@ -381,7 +384,6 @@ function Index() {
   });
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
-  const SUF = ["st", "nd", "rd", "th", "th"];
   const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground", timeout: "bg-muted text-ink", standby: "bg-secondary text-ink", smash: "bg-accent text-ink", glassdoor: "bg-primary text-primary-foreground", soup: "bg-secondary text-ink", tactile: "bg-accent text-ink", jet: "bg-accent text-ink", scuba: "bg-secondary text-ink", laksa: "bg-primary text-primary-foreground", copter: "bg-accent text-ink", lunge: "bg-accent text-ink" };
   const raceScreen = (
     <main className="h-full min-h-0 grass-bg flex flex-col overflow-hidden">
@@ -397,7 +399,7 @@ function Index() {
       </header>
       <div className="flex flex-1 min-h-0 px-1 pb-1 sm:px-2 sm:pb-4 gap-2 sm:gap-3">
         {/* tote board: choice labels beside the lanes */}
-        <aside className="tote w-32 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto flex flex-col p-1.5 sm:p-2">
+        <aside className={`tote ${choices.length > 5 ? "tote-compact" : ""} w-32 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto flex flex-col p-1.5 sm:p-2`}>
 
           <div className="tote-head font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
@@ -407,16 +409,16 @@ function Index() {
                 <div className="tote-row w-full p-2">
                   <div className="flex items-center gap-2">
                     <span className="tote-badge h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
-                    <div className="font-bold truncate flex-1">{c}</div>
+                    <div className="tote-name font-bold truncate flex-1">{c}</div>
                   </div>
                   <div className="tote-line mt-2 flex items-center justify-between gap-1">
-                    <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
+                    <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? ordinal(rank) : "—"}</span>
                     {h && (phase === "race" || phase === "climax") && !done && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
+                      <span className={`tote-chip text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
                       </span>
                     )}
-                    {done && <span className="text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink bg-accent text-ink">🏁 Finished</span>}
+                    {done && <span className="tote-done text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink bg-accent text-ink">🏁 Finished</span>}
                   </div>
                 </div>
               </div>
@@ -456,13 +458,14 @@ function Index() {
           {(phase === "race" || phase === "climax") && (
             <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
               <div className="font-display text-[11px] tracking-widest text-accent mb-1">LIVE STANDINGS</div>
-              {ranks.map((hi, r) => (
+              {ranks.slice(0, 5).map((hi, r) => (
                 <div key={hi} className="flex items-center gap-1.5 text-xs font-bold text-gate leading-5">
                   <span className="w-4">{r + 1}.</span>
                   <span className="h-3 w-3 rounded-full border border-ink shrink-0" style={{ background: COATS[hi] }} />
                   <span className="truncate">{choices[hi]}</span>
                 </div>
               ))}
+              {ranks.length > 5 && <div className="text-[11px] font-bold text-gate/80 leading-5">…and {ranks.length - 5} more</div>}
             </div>
           )}
           <div className="relative" style={{ width: TRACK, height: 116 + choices.length * 150 + 26 }}>
@@ -547,7 +550,7 @@ function Index() {
       {phase === "done" && winner !== undefined && (
         <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-[200]">
           <Confetti />
-          <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-[92dvh] overflow-y-auto">
+          <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-full overflow-y-auto">
             <div className="flex justify-end mb-2">{soundToggle}</div>
             <p className="podium-lead font-bold text-muted-foreground">The horses have decided…</p>
             <h2 className="podium-title font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
@@ -665,7 +668,7 @@ function Confetti() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {pieces.map((i) => (
         <span key={i} className="confetti" style={{
-          left: `${(i * 37) % 100}%`, background: COATS[i % 5],
+          left: `${(i * 37) % 100}%`, background: COATS[i % COATS.length],
           animationDelay: `${(i % 10) * 0.15}s`, animationDuration: `${2 + (i % 5) * 0.4}s`,
         }} />
       ))}

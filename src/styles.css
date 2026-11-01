@@ -105,6 +105,11 @@
   --horse-3: oklch(0.35 0.04 40);
   --horse-4: oklch(0.75 0.13 70);
   --horse-5: oklch(0.6 0.03 260);
+  --horse-6: oklch(0.62 0.16 350);
+  --horse-7: oklch(0.72 0.15 110);
+  --horse-8: oklch(0.5 0.14 230);
+  --horse-9: oklch(0.45 0.12 305);
+  --horse-10: oklch(0.83 0.09 75);
   --accent-foreground: oklch(0.208 0.042 265.755);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
@@ -209,8 +214,38 @@ body { font-family: var(--font-sans); }
   var(--grass); border-block: 3px solid var(--ink); }
 .bunting { background: repeating-conic-gradient(from 150deg at 50% 0, var(--primary) 0 60deg, transparent 0 360deg) 0 0/28px 18px,
   repeating-conic-gradient(from 150deg at 50% 0, var(--gold) 0 60deg, transparent 0 360deg) 14px 0/28px 18px; }
-.tote { background: linear-gradient(var(--board), var(--board-2)); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 5px 5px 0 var(--ink); color: var(--gate); }
+.tote { background: linear-gradient(var(--board), var(--board-2)); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 5px 5px 0 var(--ink); color: var(--gate); container-type: size; container-name: tote; }
 .tote-row { background: oklch(0.18 0.04 150); border: 2px solid oklch(0.4 0.06 150); border-radius: .6rem; }
+/* A full field: the board shares its height across ten rows instead of one lane each. */
+.tote-compact .tote-head { height: 3rem; font-size: 1rem; }
+.tote-compact .tote-slot { height: auto; min-height: 3rem; flex: 1 1 0; overflow: hidden; }
+.tote-compact .tote-row { padding: 0.3rem 0.5rem; }
+.tote-compact .tote-line { margin-top: 0.2rem; }
+.tote-compact .tote-badge { height: 1.5rem; width: 1.5rem; font-size: 0.8rem; border-radius: 0.35rem; }
+.tote-compact .tote-rank { font-size: 1.15rem; }
+/* The board measures itself, not the screen: a sideways phone — turned by hand or
+   turned by us — has to list every choice on one tight line each, and needs a little
+   more width to fit the names in. */
+.stage-rotated .tote { width: 11rem; }
+@media (max-height: 620px) { .tote { width: 11rem; } }
+@container tote (max-height: 460px) {
+  .tote-head, .tote-compact .tote-head { height: 1.25rem; font-size: 0.7rem; }
+  .tote-slot, .tote-compact .tote-slot { height: auto; min-height: 1.5rem; flex: 1 1 0; overflow: hidden; }
+  .tote-row, .tote-compact .tote-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.05rem 0.35rem; }
+  .tote-row > div:first-child, .tote-compact .tote-row > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .tote-line, .tote-compact .tote-line { margin-top: 0; flex: 0 0 auto; }
+  .tote-name, .tote-compact .tote-name { font-size: 0.75rem; line-height: 1.15; }
+  .tote-badge, .tote-compact .tote-badge { height: 1.1rem; width: 1.1rem; font-size: 0.62rem; border-width: 2px; border-radius: 0.3rem; }
+  .tote-rank, .tote-compact .tote-rank { font-size: 0.85rem; width: auto; padding-inline: 0.25rem; }
+  .tote-chip, .tote-done { display: none; }
+}
+/* A long list of choices has to stay on one screen: the rows tighten up. */
+.setup-rows { display: grid; gap: 0.75rem; }
+.setup-rows-compact { gap: 0.45rem; }
+.setup-rows-compact .setup-row { gap: 0.4rem; }
+.setup-rows-compact .setup-row > span { height: 1.5rem; width: 1.5rem; }
+.setup-rows-compact .setup-row input { padding: 0.25rem 0.6rem; font-size: 0.95rem; }
+.setup-rows-compact .setup-row button { padding: 0.15rem 0.5rem; font-size: 0.9rem; }
 .fx-spin { animation: fxspin .7s linear infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes fxspin { to { transform: rotate(360deg) } }
 .fx-orbit { animation: fxspin 1.2s linear infinite; }
@@ -352,21 +387,23 @@ body { font-family: var(--font-sans); }
 /* Everything has to live on one screen: the entry card drops to a compact form
    and the tote board rows share the height instead of each demanding a full lane. */
 @media (max-height: 620px) {
-  .tote-head { height: 1.75rem; font-size: 0.75rem; }
-  .tote-slot { height: auto; min-height: 4rem; flex: 1 1 0; overflow: hidden; }
-  .tote-row { padding: 0.35rem 0.5rem; }
-  .tote-line { margin-top: 0.15rem; }
-  .tote-badge { height: 1.5rem; width: 1.5rem; font-size: 0.8rem; border-radius: 0.35rem; }
-  .tote-rank { font-size: 1.15rem; }
-
-  .setup-card { padding: 0.75rem 1rem; }
-  .setup-title { font-size: 1.9rem; }
+  /* The tote board compacts itself by measuring its own box — see the container
+     query above — so the short screen needs no rules of its own here. */
+  .setup-card { padding: 0.6rem 0.85rem; }
+  .setup-title { font-size: 1.5rem; }
   .setup-lead { display: none; }
-  .setup-rows { margin-top: 0.75rem; }
-  .setup-rows > * + * { margin-top: 0.4rem; }
+  .setup-rows { margin-top: 0.6rem; gap: 0.4rem; }
+  .setup-rows-compact { gap: 0.3rem; }
+  .setup-rows-compact .setup-row > span { height: 1.25rem; width: 1.25rem; }
+  .setup-rows-compact .setup-row input { padding: 0.15rem 0.5rem; font-size: 0.9rem; }
   .setup-row input { padding: 0.25rem 0.6rem; font-size: 0.95rem; }
-  .setup-add { margin-top: 0.5rem; padding: 0.3rem; font-size: 0.9rem; }
-  .setup-start { margin-top: 0.75rem; padding: 0.45rem; font-size: 1.25rem; }
+  .setup-add { margin-top: 0.4rem; padding: 0.25rem; font-size: 0.85rem; }
+  .setup-start { margin-top: 0.5rem; padding: 0.35rem; font-size: 1.15rem; }
+}
+
+/* A sideways phone has width to spare and no height: the choices go two abreast. */
+@media (max-height: 620px) and (min-width: 620px) {
+  .setup-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* The results card has to keep its buttons on screen when the phone is sideways. */

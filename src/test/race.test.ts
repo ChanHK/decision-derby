@@ -121,3 +121,28 @@ describe("unified gadget pool", () => {
     for (const g of GADGET_POOL) expect(RUSH_STATES).toContain(g);
   });
 });
+
+import { MAX_CHOICES, MIN_CHOICES, PERSONALITIES, ordinal } from "@/lib/race";
+describe("full field of ten", () => {
+  it("takes up to ten choices and needs at least two", () => {
+    expect(MAX_CHOICES).toBe(10);
+    expect(MIN_CHOICES).toBe(2);
+    expect(PERSONALITIES.length).toBeGreaterThanOrEqual(MAX_CHOICES);
+  });
+  it("gives every horse its own speed so ten horses do not run in lockstep", () => {
+    const picked = PERSONALITIES.slice(0, MAX_CHOICES);
+    expect(new Set(picked.map((p) => p.base)).size).toBe(MAX_CHOICES);
+    expect(new Set(picked.map((p) => p.kick)).size).toBe(MAX_CHOICES);
+  });
+  it("labels every place in the field", () => {
+    expect(ordinal(0)).toBe("1st");
+    expect(ordinal(1)).toBe("2nd");
+    expect(ordinal(2)).toBe("3rd");
+    expect(ordinal(3)).toBe("4th");
+    expect(ordinal(9)).toBe("10th");
+    expect(ordinal(10)).toBe("11th");
+    expect(ordinal(11)).toBe("12th");
+    expect(ordinal(12)).toBe("13th");
+    expect(ordinal(20)).toBe("21st");
+  });
+});
