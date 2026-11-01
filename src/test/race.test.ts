@@ -69,10 +69,22 @@ describe("rivalry", () => {
   it("bumps only neighbouring lanes within range", () => {
     expect(shouldBump(20, 1, () => 0.1)).toBe(true);
     expect(shouldBump(20, 2, () => 0.1)).toBe(false);
-    expect(shouldBump(80, 1, () => 0.1)).toBe(false);
+    expect(shouldBump(80, 1, () => 0.1)).toBe(true);
+    expect(shouldBump(100, 1, () => 0.1)).toBe(false);
   });
   it("drafts only a short way behind a rival", () => {
     expect(draftBoost(80)).toBeGreaterThan(1);
     expect(draftBoost(300)).toBe(1);
+  });
+});
+
+import { burnoutState as bo, speedFor as sf } from "@/lib/race";
+describe("gadget crashes", () => {
+  it("rocket always explodes and the horse lies still", () => {
+    expect(bo(() => 0.99, "rocket")).toBe("exploded");
+    expect(sf("exploded", 0, 150)).toBe(0);
+  });
+  it("hoverboard always snaps", () => {
+    expect(bo(() => 0.99, "skate")).toBe("wiped");
   });
 });
