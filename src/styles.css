@@ -231,8 +231,9 @@ body { font-family: var(--font-sans); }
 @container tote (max-height: 460px) {
   .tote-head, .tote-compact .tote-head { height: 1.25rem; font-size: 0.7rem; }
   .tote-slot, .tote-compact .tote-slot { height: auto; min-height: 1.5rem; flex: 1 1 0; overflow: hidden; }
-  .tote-row, .tote-compact .tote-row { padding: 0.08rem 0.35rem; }
-  .tote-line, .tote-compact .tote-line { margin-top: 0.05rem; }
+  .tote-row, .tote-compact .tote-row { display: flex; align-items: center; gap: 0.3rem; padding: 0.05rem 0.35rem; }
+  .tote-row > div:first-child, .tote-compact .tote-row > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .tote-line, .tote-compact .tote-line { margin-top: 0; flex: 0 0 auto; }
   .tote-name, .tote-compact .tote-name { font-size: 0.75rem; line-height: 1.15; }
   .tote-badge, .tote-compact .tote-badge { height: 1.1rem; width: 1.1rem; font-size: 0.62rem; border-width: 2px; border-radius: 0.3rem; }
   .tote-rank, .tote-compact .tote-rank { font-size: 0.85rem; }
