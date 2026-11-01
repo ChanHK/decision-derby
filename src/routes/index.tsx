@@ -341,33 +341,36 @@ function Index() {
   }, [phase, order]);
 
   const setupScreen = (
-    <main className="h-full grass-bg flex p-4 overflow-y-auto">
-      <div className="setup-card cartoon-card w-full max-w-lg p-6 m-auto">
+    <main className="h-full grass-bg flex p-4">
+      <div className="setup-card cartoon-card w-full max-w-lg p-6 m-auto max-h-full overflow-y-auto">
 
           <div className="flex justify-end mb-2">{soundToggle}</div>
           <h1 className="setup-title font-display text-5xl text-center text-primary">Derby Decider</h1>
           <p className="setup-lead text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
-          <div className="setup-rows mt-6 space-y-3">
+          <div className={`setup-rows mt-6 ${choices.length > 6 ? "setup-grid" : "space-y-3"}`}>
             {choices.map((c, i) => (
               <div key={i} className="setup-row flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full border-[3px] border-ink shrink-0" style={{ background: COATS[i] }} />
                 <input value={c} maxLength={30} placeholder={`Choice ${i + 1}`}
                   onChange={(e) => setChoices(choices.map((x, j) => (j === i ? e.target.value : x)))}
                   className="flex-1 rounded-xl border-[3px] border-ink bg-card px-3 py-2 font-bold outline-none focus:ring-4 ring-accent" />
-                {choices.length > 2 && (
+                {choices.length > MIN_CHOICES && (
                   <button onClick={() => setChoices(choices.filter((_, j) => j !== i))} aria-label="Remove"
                     className="cartoon-btn bg-secondary px-3 py-2">✕</button>
                 )}
               </div>
             ))}
           </div>
-          {choices.length < 5 && (
+          {choices.length < MAX_CHOICES && (
             <button onClick={() => setChoices([...choices, ""])} className="setup-add mt-3 w-full rounded-xl border-[3px] border-dashed border-ink py-2 font-bold text-muted-foreground">+ Add choice</button>
           )}
-          <button disabled={valid.length < 2} onClick={requestStart} className="setup-start cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
+          {choices.length >= MAX_CHOICES && (
+            <p className="setup-add mt-3 w-full text-center text-sm font-bold text-muted-foreground">A full field of {MAX_CHOICES} — that's the track limit.</p>
+          )}
+          <button disabled={valid.length < MIN_CHOICES} onClick={requestStart} className="setup-start cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
             And they're off! 🏁
           </button>
-          {valid.length < 2 && <p className="text-center text-sm mt-2 text-muted-foreground">Enter at least 2 choices.</p>}
+          {valid.length < MIN_CHOICES && <p className="text-center text-sm mt-2 text-muted-foreground">Enter at least {MIN_CHOICES} choices.</p>}
       </div>
     </main>
   );
