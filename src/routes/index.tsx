@@ -147,6 +147,15 @@ function Index() {
     return () => { cancelled = true; timers.forEach(clearTimeout); };
   }, [phase]);
 
+  // Keep "GO!" on screen while the horses launch, then let it fade away.
+  const [showGo, setShowGo] = useState(false);
+  useEffect(() => {
+    if (phase !== "race") { setShowGo(false); return; }
+    setShowGo(true);
+    const id = setTimeout(() => setShowGo(false), 800);
+    return () => clearTimeout(id);
+  }, [phase]);
+
   useEffect(() => {
     if (phase !== "race") return;
     soundRef.current?.syncRace(hRef.current.map((h) => h.state), true);
@@ -416,6 +425,11 @@ function Index() {
                 <div className="font-display text-2xl sm:text-3xl text-ink">THE DECISION IS MADE:</div>
                 <div className="font-display text-5xl sm:text-7xl text-primary break-words">{choices[winner]}</div>
               </div>
+            </div>
+          )}
+          {phase === "race" && showGo && (
+            <div className="absolute top-0 bottom-0 z-[100] pointer-events-none flex items-center justify-center" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
+              <span className="font-display text-8xl text-accent go-fade drop-shadow">GO!</span>
             </div>
           )}
           {phase === "countdown" && (
