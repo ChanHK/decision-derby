@@ -58,7 +58,8 @@ export function randomState(rand: () => number = Math.random, leading = false, p
   const r = rand();
   if (leading) {
     if (r < (previous === "turbo" ? 0.8 : 0.55)) {
-      const mishaps: HorseState[] = ["wrongway", "moonwalk", "nap", "stumble", "graze", "ufo"];
+      const mishaps: HorseState[] = ["wrongway", "moonwalk", "nap", "stumble", "graze"];
+      if (r < 0.12) return "ufo";
       return mishaps[Math.floor(rand() * mishaps.length)] ?? "nap";
     }
     return "normal";
