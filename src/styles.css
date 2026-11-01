@@ -226,8 +226,8 @@ body { font-family: var(--font-sans); }
 /* The board measures itself, not the screen: a sideways phone — turned by hand or
    turned by us — has to list every choice on one tight line each. */
 @container tote (max-height: 460px) {
-  .tote-head, .tote-compact .tote-head { height: 1.5rem; font-size: 0.7rem; }
-  .tote-slot, .tote-compact .tote-slot { height: auto; min-height: 1.9rem; flex: 1 1 0; overflow: hidden; }
+  .tote-head, .tote-compact .tote-head { height: 1.35rem; font-size: 0.7rem; }
+  .tote-slot, .tote-compact .tote-slot { height: auto; min-height: 1.7rem; flex: 1 1 0; overflow: hidden; }
   .tote-row, .tote-compact .tote-row { padding: 0.1rem 0.35rem; }
   .tote-line, .tote-compact .tote-line { margin-top: 0.05rem; }
   .tote-badge, .tote-compact .tote-badge { height: 1.15rem; width: 1.15rem; font-size: 0.65rem; border-width: 2px; border-radius: 0.3rem; }
