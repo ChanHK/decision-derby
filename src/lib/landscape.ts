@@ -18,12 +18,13 @@ export function trackHeight(lanes: number): number {
 
 /**
  * The smallest scale worth using for this many lanes. A five-horse field keeps the
- * old readability floor; a ten-horse field trades horse size for "every lane visible".
+ * old readability floor; a bigger field trades horse size for "every lane visible".
+ * Six or more lanes must be able to shrink to exactly what a sideways phone has left.
  */
 export function minFit(lanes: number): number {
   const n = Math.max(1, lanes);
   if (n <= 5) return MIN_FIT;
-  return Math.max(MIN_FIT_FLOOR, Math.min(MIN_FIT, (MIN_FIT * 5) / n));
+  return Math.max(MIN_FIT_FLOOR, (MIN_FIT * 4) / n);
 }
 
 /**
