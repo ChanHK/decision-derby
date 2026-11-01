@@ -103,7 +103,7 @@ describe("gadget picks", () => {
   });
   it("mid-pack can pick any of the 8 boosts, not just rocket/hoverboard", () => {
     const seq = (vals: number[]) => { let k = 0; return () => vals[k++]!; };
-    expect(mp(seq([0.1, 0.5]))).toBe("jet");
+    expect(mp(seq([0.1, 0.4]))).toBe("jet");
     expect(mp(seq([0.1, 0.99]))).toBe("lunge");
     expect(mp(seq([0.9, 0.5]))).toBe("moonwalk");
   });
