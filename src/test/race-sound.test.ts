@@ -50,9 +50,11 @@ describe("replacement race audio", () => {
 
   it("cancels a loading beam when the animation ends before decoding", async () => {
     let resolve: ((value: unknown) => void) | undefined;
-    decode = () => new Promise((r) => { resolve = r; });
+    const decoded = new Promise((r) => { resolve = r; });
+    decode = () => decoded;
     const sound = new RaceSound(); sound.setEnabled(true);
     sound.syncRace(["ufo"], true); await flush();
+    expect(resolve).toBeDefined();
     sound.syncRace([], false);
     resolve?.({ duration: 15 }); await flush();
     expect(sources).toHaveLength(0);
@@ -68,7 +70,8 @@ describe("replacement race audio", () => {
 
   it("mute cancels pending clips even if sound is enabled again", async () => {
     let resolve: ((value: unknown) => void) | undefined;
-    decode = () => new Promise((r) => { resolve = r; });
+    const decoded = new Promise((r) => { resolve = r; });
+    decode = () => decoded;
     const sound = new RaceSound(); sound.setEnabled(true);
     void sound.playClip("decision"); await flush();
     sound.setEnabled(false); sound.setEnabled(true);
