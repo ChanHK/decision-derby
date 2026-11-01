@@ -222,3 +222,41 @@ export function crashFinish(state: HorseState, progress: number): HorseState {
   if (state === "skate") return "wiped";
   return state;
 }
+
+/* ---------------- Elastic probability engine ---------------- */
+/** The director rolls once per this many seconds in the rubber phase. */
+export const DIRECTOR_TICK = 1;
+/** Seconds a horse stays immune after any gag, penalty or boost ends. */
+export const IMMUNE_SECONDS = 2.5;
+/** Chance the underdog's rocket/jet/hoverboard fails right away, and when. */
+export const FALSE_HOPE_CHANCE = 0.15;
+export const FALSE_HOPE_DELAY = 0.5;
+export const FALSE_HOPE_BOOSTS: HorseState[] = ["rocket", "jet", "skate"];
+/** Curses that kill the leader's momentum instantly and can cause a pile-up. */
+export const MOMENTUM_STOPPERS: HorseState[] = ["glassdoor", "soup", "timeout"];
+export const PILEUP_GAP = 0.05;
+/** Chance a boost fires backwards (to the left). */
+export const REVERSE_BOOST_CHANCE = 0.2;
+
+/** (gap - 10%) * 2, clamped to 0..1. A 30% gap gives a 40% chance. */
+export function triggerChance(leaderX: number, lastX: number, trackWidth: number): number {
+  const gap = (leaderX - lastX) / trackWidth;
+  return Math.min(1, Math.max(0, (gap - 0.1) * 2));
+}
+export function isImmune(immuneUntil: number | undefined, t: number): boolean {
+  return immuneUntil !== undefined && t < immuneUntil;
+}
+export function falseHope(rand: () => number, boost: HorseState): boolean {
+  return FALSE_HOPE_BOOSTS.includes(boost) && rand() < FALSE_HOPE_CHANCE;
+}
+/** What a failed boost turns into. */
+export function boostFailure(boost: HorseState): HorseState {
+  return boost === "skate" ? "wiped" : "exploded";
+}
+/** 2nd place stumbles when the leader stops dead and 2nd is within 5% of the track behind. */
+export function pileUp(curse: HorseState, leaderX: number, secondX: number, trackWidth: number): boolean {
+  return MOMENTUM_STOPPERS.includes(curse) && leaderX - secondX < trackWidth * PILEUP_GAP;
+}
+export function reverseBoost(rand: () => number, boost: HorseState): boolean {
+  return GADGET_POOL.includes(boost) && rand() < REVERSE_BOOST_CHANCE;
+}

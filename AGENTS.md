@@ -12,3 +12,4 @@
 - Keep race probability and automatic camera rules in browser-safe race helpers with concrete unit tests so the animation loop shares tested behavior.
 - Play optional uploaded race audio through a browser-only Web Audio controller unlocked by a user gesture; cancel pending and active state loops when their animation ends.
 - Use native horizontal track scrolling; user gestures pause automatic following until explicitly resumed.
+- Mid-race rubber-banding uses the elastic helpers in src/lib/race.ts (1s tick, gap-scaled chance, post-animation immunity, false hope, pile-ups, reverse boosts) so rules stay unit-tested.
