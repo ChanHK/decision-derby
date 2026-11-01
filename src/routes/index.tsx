@@ -100,6 +100,7 @@ function Index() {
 
   function start() {
     if (valid.length < 2) return;
+    soundRef.current?.stopAll();
     soundRef.current?.setEnabled(soundOn);
     setChoices(valid);
     followRef.current = true; setFollowing(true); autoCam.current = 0;
@@ -111,7 +112,7 @@ function Index() {
     });
     setHorses([...hRef.current]);
     setOrder([]);
-    soundRef.current?.playClip("horn");
+    void soundRef.current?.playClip("launch");
     setPhase("pan");
   }
 
@@ -130,19 +131,25 @@ function Index() {
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
   }, [phase, maxCam]);
 
-  // tension start: red lights stack up one by one (horses locked in idle), green = gates burst
+  // The replacement countdown is one complete three-second clip.
   useEffect(() => {
     if (phase !== "countdown") return;
-    soundRef.current?.playClip(count === 3 ? "count3" : count === 2 ? "count2" : count === 1 ? "count1" : "go");
-    if (count === 0) { const id = setTimeout(() => setPhase("race"), 600); return () => clearTimeout(id); }
-    const id = setTimeout(() => setCount((c) => c - 1), 750);
-    return () => clearTimeout(id);
-  }, [phase, count]);
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    void (async () => {
+      await soundRef.current?.playClip("countdown");
+      if (cancelled) return;
+      timers.push(setTimeout(() => setCount(2), 1000));
+      timers.push(setTimeout(() => setCount(1), 2000));
+      timers.push(setTimeout(() => setCount(0), 3000));
+      timers.push(setTimeout(() => setPhase("race"), 3100));
+    })();
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== "race") return;
-    soundRef.current?.playClip("gallop", { loop: true, volume: 0.45 });
-    let windDone = false;
+    soundRef.current?.syncRace(hRef.current.map((h) => h.state), true);
     let raf = 0; let last = performance.now(); let t = 0; let camR = -1;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
@@ -158,7 +165,6 @@ function Index() {
         const act = directorPhase(prog) === "finish" ? "finish" : directorPhase(leadP) === "setup" ? "setup" : "rubber";
         const rank = ranked.indexOf(h);
         if (act === "finish") {
-          if (!windDone) { windDone = true; soundRef.current?.playClip("wind", { volume: 0.7 }); }
           const purged = crashFinish(finishPurge(h.state), prog);
           if (purged !== h.state) {
             const crashed = purged === "exploded" || purged === "wiped";
@@ -194,13 +200,13 @@ function Index() {
         if (h.state === "lunge" && h.lungeAt !== undefined && t >= h.lungeAt) {
           // hold the deep lunge, then snap forward instantly
           h.x += vw * LUNGE_SNAP; h.lungeAt += LUNGE_EVERY;
-          soundRef.current?.play("lunge");
         }
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
         h.x = Math.max(START - 40, h.x + v * dt);
         if (h.x >= FINISH) {
           // climax: the first nose over the line freezes everyone else
           h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false;
+          soundRef.current?.syncRace([], false);
           soundRef.current?.play("victory");
           const fin = [i, ...hs.map((_, k) => k).filter((k) => k !== i).sort((a, b) => hs[b]!.x - hs[a]!.x)];
           setOrder(fin);
@@ -209,6 +215,7 @@ function Index() {
           return;
         }
       }
+      soundRef.current?.syncRace(hs.map((h) => h.state), true);
       setHorses(hs.map((h) => ({ ...h })));
       // Steady forward-follow at a fixed scale; never zoom with pack spacing.
       const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.6));
@@ -218,7 +225,7 @@ function Index() {
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(raf); soundRef.current?.stopLoop("gallop"); };
+    return () => { cancelAnimationFrame(raf); soundRef.current?.syncRace([], false); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -384,7 +391,7 @@ function Index() {
               );
             })}
             {/* starting stalls */}
-            <StartingGate lanes={choices.length} left={START} top={116} open={phase === "race" || phase === "climax" || phase === "done"} />
+            <StartingGate lanes={choices.length} left={START} top={116} open={(phase === "countdown" && count === 0) || phase === "race" || phase === "climax" || phase === "done"} />
             {/* finish arch */}
             <div className="absolute top-[116px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
             <div className="absolute top-[66px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
