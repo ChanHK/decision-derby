@@ -19,3 +19,8 @@
 - [x] Race plays sideways on phones: turn-your-phone prompt with a sideways fallback.
 - [x] Track scales to fit the screen height; entry card, board labels and results card stay on screen.
 - [x] Unit-test the layout helpers and verify a full race on a phone-sized screen.
+
+# Ten choices
+- [x] Raise the entry limit from five to ten, with ten horse coats and personalities.
+- [x] Entry card, tote board and results card all fit ten on desktop and on a sideways phone.
+- [x] Unit-test the ten-field helpers and verify a full ten-horse race on phone and desktop.
