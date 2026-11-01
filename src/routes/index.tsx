@@ -403,8 +403,6 @@ function Index() {
           )}
           {phase === "countdown" && (
             <div className="absolute top-0 bottom-0 z-[100] pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
-              {/* dim the track, spotlight the starting line */}
-              <div className="spotlight absolute inset-0" />
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 <div className="flex gap-3 rounded-2xl border-[4px] border-ink bg-ink/80 px-5 py-4">
                   {[3, 2, 1].map((n) => (
