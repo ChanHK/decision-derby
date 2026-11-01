@@ -320,3 +320,30 @@ body { font-family: var(--font-sans); }
   100% { opacity: 0; transform: scale(1.6); }
 }
 .go-fade { animation: go-fade 1.3s ease-in forwards; }
+
+/* Sideways stage: the race is played across the phone. */
+.stage { position: fixed; inset: 0; overflow: auto; overscroll-behavior: none; }
+.stage-rotated {
+  right: auto;
+  bottom: auto;
+  width: 100vh;
+  height: 100vw;
+  width: 100dvh;
+  height: 100dvw;
+  transform-origin: 0 0;
+  transform: rotate(90deg) translateY(-100%);
+}
+.stage-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: oklch(0.15 0.03 150 / 0.85);
+}
+.stage-gate-card { width: 100%; max-width: 22rem; }
+@keyframes phone-turn { 0%, 25% { transform: rotate(0deg) } 70%, 100% { transform: rotate(-90deg) } }
+.phone-turn { animation: phone-turn 2.4s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .phone-turn { animation: none; transform: rotate(-90deg); } }
+
