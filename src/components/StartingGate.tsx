@@ -14,7 +14,7 @@ export function StartingGate({ lanes, left, open, laneH = 150, top = 52 }: Props
         ))}
       </div>
       {/* frame in front of horses */}
-      <div className="absolute z-10 pointer-events-none" style={{ left, top: top - 44, width: DEPTH + 24, height: h + 60 }}>
+      <div className="absolute z-40 pointer-events-none" style={{ left, top: top - 44, width: DEPTH + 24, height: h + 60 }}>
         {/* roof canopy */}
         <div className="absolute -left-2 -right-2 top-0 h-[30px] gate-roof rounded-t-lg border-[3px] border-ink" />
         <div className="absolute left-0 right-0 top-[27px] h-[12px] gate-truss border-x-[3px] border-b-[3px] border-ink" />
@@ -36,7 +36,7 @@ export function StartingGate({ lanes, left, open, laneH = 150, top = 52 }: Props
         ))}
       </div>
       {/* doors: two leaves per stall, hinged on outer edges, swing open in 3D */}
-      <div className="absolute z-[11] pointer-events-none" style={{ left: left + DEPTH + 2, top, width: 14, height: h, perspective: 500 }}>
+      <div className="absolute z-[41] pointer-events-none" style={{ left: left + DEPTH + 2, top, width: 14, height: h, perspective: 500 }}>
         {Array.from({ length: lanes }, (_, i) => (
           <div key={i} className="absolute left-0 w-full" style={{ top: i * laneH + 6, height: laneH - 12, transformStyle: "preserve-3d" }}>
             <div className="gate-door absolute inset-x-0 top-0 h-1/2 border-[3px] border-ink rounded-t-md origin-top"
