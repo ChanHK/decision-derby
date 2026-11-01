@@ -206,6 +206,7 @@ function Index() {
         if (h.state === "lunge" && h.lungeAt !== undefined && t >= h.lungeAt) {
           // hold the deep lunge, then snap forward instantly
           h.x += vw * LUNGE_SNAP; h.lungeAt += LUNGE_EVERY;
+          void soundRef.current?.playClip("lunge", { volume: 0.7 }); // one sound per lunge
         }
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
         h.x = Math.max(START - 40, h.x + v * dt);

@@ -79,12 +79,15 @@ describe("replacement race audio", () => {
     expect(sources).toHaveLength(0);
   });
 
-  it("plays rocket and scuba clips once each, keeps other gadgets silent", async () => {
+  it("plays biped, rocket, jet, scuba and copter once each; lunge only plays per snap", async () => {
     const sound = new RaceSound(); sound.setEnabled(true); await flush();
     for (const state of ["biped", "rocket", "skate", "jet", "scuba", "laksa", "copter", "lunge", "wiped", "timeout"] as const) sound.play(state);
     await flush();
-    expect(sources).toHaveLength(2);
-    expect(fetch).toHaveBeenCalledTimes(11);
+    expect(sources).toHaveLength(5);
+    for (let i = 0; i < 3; i++) void sound.playClip("lunge");
+    await flush();
+    expect(sources).toHaveLength(8);
+    expect(fetch).toHaveBeenCalledTimes(15);
     const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
     for (const name of ["440hz", "550hz", "660hz", "gates_open_go"]) expect(urls.some((u) => u.includes(name))).toBe(true);
     expect(urls.some((u) => u.includes("race-countdown"))).toBe(false);
