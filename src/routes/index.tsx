@@ -158,7 +158,7 @@ function Index() {
             const crashed = purged === "exploded" || purged === "wiped";
             h.state = purged; h.line = undefined; h.panic = false;
             h.next = t + (crashed ? 99 : 0); // crashes slide all the way over the line
-            if (crashed) soundRef.current?.play(purged);
+            if (crashed) { soundRef.current?.play(purged); if (purged === "exploded") punchShake(); }
           }
         } else if (t > h.next) {
           if (h.state !== "normal") {
@@ -166,7 +166,7 @@ function Index() {
             const crash = h.state === "rocket" ? "exploded" : h.state === "skate" ? "wiped" : "normal";
             h.state = crash; h.line = undefined; h.panic = false;
             h.next = t + (crash === "normal" ? 0.6 + Math.random() * 0.6 : durationFor(crash));
-            if (crash !== "normal") soundRef.current?.play(crash);
+            if (crash !== "normal") { soundRef.current?.play(crash); if (crash === "exploded") punchShake(); }
           } else if (act === "rubber" && rubber) {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
@@ -174,7 +174,7 @@ function Index() {
             else if (rank >= 1 && Math.random() < 0.5) s = midPackChaos(Math.random);
             h.state = s; h.line = line;
             h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
-            if (s !== "normal") soundRef.current?.play(s);
+            if (s !== "normal") { soundRef.current?.play(s); if (s === "glassdoor") punchShake(); }
           }
         }
         if (h.state === "exploded") h.burnt = true;
@@ -199,7 +199,14 @@ function Index() {
         }
       }
       setHorses(hs.map((h) => ({ ...h })));
-      const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.4));
+      // bounding-box zoom: tight pack zooms in to 1.3x, spread pack eases back to 1.0x
+      const spread = leader.x - lastH.x;
+      const zTarget = spread < vw * 0.55 ? 1.3 : 1;
+      zoomRef.current += (zTarget - zoomRef.current) * Math.min(1, dt * 3);
+      setZoom(zoomRef.current);
+      const effVw = vw / zoomRef.current;
+      // leader pan: keep 1st place anchored near the 60% mark of the screen
+      const target = Math.min(maxCam, Math.max(0, leader.x - effVw * 0.6));
       const forward = forwardCamera(Math.max(0, camR), target, maxCam);
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
       moveCamera(camR);
