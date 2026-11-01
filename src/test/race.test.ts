@@ -47,7 +47,7 @@ describe("two-legged run", () => {
   });
 });
 
-import { burnoutState, chaserState, rollBiped } from "@/lib/race";
+import { burnoutState, chaserState } from "@/lib/race";
 describe("competitive rules", () => {
   it("turbo usually ends in a burnout mishap", () => {
     expect(burnoutState(((r) => () => r.shift() ?? 0)([0.5, 0]), "turbo")).toBe("graze");
