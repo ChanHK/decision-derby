@@ -409,7 +409,7 @@ function Index() {
                 <div className="tote-row w-full p-2">
                   <div className="flex items-center gap-2">
                     <span className="tote-badge h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
-                    <div className="font-bold truncate flex-1">{c}</div>
+                    <div className="tote-name font-bold truncate flex-1">{c}</div>
                   </div>
                   <div className="tote-line mt-2 flex items-center justify-between gap-1">
                     <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? ordinal(rank) : "—"}</span>
