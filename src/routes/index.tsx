@@ -8,9 +8,9 @@ import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
 import { LandscapeGate, Stage, useLandscape, useShortScreen } from "@/components/Stage";
-import { COLUMN_CHROME, fitScale, podiumShape, showGate, trackHeight } from "@/lib/landscape";
+import { COLUMN_CHROME, fitScale, minFit, podiumShape, showGate, trackHeight } from "@/lib/landscape";
 
-import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
+import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, MAX_CHOICES, MIN_CHOICES, ordinal, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Derby Decider — Let horses make your decision" },
-      { name: "description", content: "Enter up to 5 choices and watch cartoon horses race with surprise events to pick your decision." },
+      { name: "description", content: "Enter up to 10 choices and watch cartoon horses race with surprise events to pick your decision." },
       { property: "og:title", content: "Derby Decider" },
       { property: "og:description", content: "A horse race that makes your decisions for you." },
       { property: "og:type", content: "website" },
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)"];
+const COATS = ["var(--horse-1)", "var(--horse-2)", "var(--horse-3)", "var(--horse-4)", "var(--horse-5)", "var(--horse-6)", "var(--horse-7)", "var(--horse-8)", "var(--horse-9)", "var(--horse-10)"];
 const TRACK = 4700; // world px
 const FINISH = 3600;
 const START = 120;
@@ -123,7 +123,7 @@ function Index() {
   useEffect(() => {
     const el = colRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const m = () => setFit(fitScale(el.clientHeight - COLUMN_CHROME, trackH));
+    const m = () => setFit(fitScale(el.clientHeight - COLUMN_CHROME, trackH, minFit(choices.length)));
     m();
     const ro = new ResizeObserver(m);
     ro.observe(el);
@@ -665,7 +665,7 @@ function Confetti() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {pieces.map((i) => (
         <span key={i} className="confetti" style={{
-          left: `${(i * 37) % 100}%`, background: COATS[i % 5],
+          left: `${(i * 37) % 100}%`, background: COATS[i % COATS.length],
           animationDelay: `${(i % 10) * 0.15}s`, animationDuration: `${2 + (i % 5) * 0.4}s`,
         }} />
       ))}
