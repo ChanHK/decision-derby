@@ -319,4 +319,4 @@ body { font-family: var(--font-sans); }
   0% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.6); }
 }
-.go-fade { animation: go-fade 0.8s ease-out forwards; }
+.go-fade { animation: go-fade 1.3s ease-in forwards; }

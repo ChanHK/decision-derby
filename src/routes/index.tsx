@@ -143,18 +143,13 @@ function Index() {
     timers.push(setTimeout(() => setPhase("race"), 3500));
     return () => { timers.forEach(clearTimeout); };
   }, [phase]);
-  const _unusedCountdownGuard = (() => {
-    if (true as boolean) return;
-    void (async () => {
-    return () => { cancelled = true; timers.forEach(clearTimeout); };
-  }, [phase]);
 
   // Keep "GO!" on screen while the horses launch, then let it fade away.
   const [showGo, setShowGo] = useState(false);
   useEffect(() => {
     if (phase !== "race") { setShowGo(false); return; }
     setShowGo(true);
-    const id = setTimeout(() => setShowGo(false), 800);
+    const id = setTimeout(() => setShowGo(false), 1300);
     return () => clearTimeout(id);
   }, [phase]);
 
