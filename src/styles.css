@@ -214,8 +214,19 @@ body { font-family: var(--font-sans); }
   var(--grass); border-block: 3px solid var(--ink); }
 .bunting { background: repeating-conic-gradient(from 150deg at 50% 0, var(--primary) 0 60deg, transparent 0 360deg) 0 0/28px 18px,
   repeating-conic-gradient(from 150deg at 50% 0, var(--gold) 0 60deg, transparent 0 360deg) 14px 0/28px 18px; }
-.tote { background: linear-gradient(var(--board), var(--board-2)); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 5px 5px 0 var(--ink); color: var(--gate); }
+.tote { background: linear-gradient(var(--board), var(--board-2)); border: 4px solid var(--ink); border-radius: 1rem; box-shadow: 5px 5px 0 var(--ink); color: var(--gate); container-type: size; container-name: tote; }
 .tote-row { background: oklch(0.18 0.04 150); border: 2px solid oklch(0.4 0.06 150); border-radius: .6rem; }
+/* The board measures itself, not the screen: a sideways phone — turned by hand or
+   turned by us — has to list every choice on one tight line each. */
+@container tote (max-height: 460px) {
+  .tote-head { height: 1.5rem; font-size: 0.7rem; }
+  .tote-slot { height: auto; min-height: 1.9rem; flex: 1 1 0; overflow: hidden; }
+  .tote-row { padding: 0.1rem 0.35rem; }
+  .tote-line { margin-top: 0.05rem; }
+  .tote-badge { height: 1.15rem; width: 1.15rem; font-size: 0.65rem; border-width: 2px; border-radius: 0.3rem; }
+  .tote-rank { font-size: 0.9rem; }
+  .tote-chip { display: none; }
+}
 /* A full field: the board shares its height across ten rows instead of one lane each. */
 .tote-compact .tote-head { height: 3rem; font-size: 1rem; }
 .tote-compact .tote-slot { height: auto; min-height: 3rem; flex: 1 1 0; overflow: hidden; }
