@@ -270,3 +270,11 @@ body { font-family: var(--font-sans); }
 @keyframes fx-abduct { 0%,100% { transform: translateY(-34px) rotate(-6deg) } 50% { transform: translateY(-46px) rotate(6deg) } }
 .fx-abduct { animation: fx-abduct .6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .fx-rumble, .fx-hover, .fx-launch, .fx-tumble, .fx-debris, .fx-speedline, .fx-smoke, .fx-abduct { animation: none; } }
+
+/* Race Director climax */
+.fx-frozen, .fx-frozen * { animation-play-state: paused !important; }
+@keyframes screen-shake { 0%,100% { transform: translate(0,0) } 20% { transform: translate(-8px,4px) } 40% { transform: translate(7px,-5px) } 60% { transform: translate(-5px,-3px) } 80% { transform: translate(4px,5px) } }
+.screen-shake { animation: screen-shake .45s linear 3; }
+@keyframes decision-slam { 0% { transform: scale(3) rotate(-6deg); opacity: 0 } 45% { transform: scale(.92) rotate(2deg); opacity: 1 } 70% { transform: scale(1.06) rotate(-1deg) } 100% { transform: scale(1) rotate(0) } }
+.decision-slam { animation: decision-slam .6s cubic-bezier(.2,.9,.3,1.2) both; }
+@media (prefers-reduced-motion: reduce) { .screen-shake, .decision-slam { animation: none; } }

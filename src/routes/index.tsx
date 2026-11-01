@@ -290,7 +290,7 @@ function Index() {
           })}
         </aside>
         {/* track viewport */}
-        <div ref={viewRef} aria-label="Race track" tabIndex={0} className="race-scroll relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink" style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" ? "screen-shake" : ""} relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 52 + choices.length * 150 + 26 + 18 }}
           onKeyDown={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) pauseFollow(); }}
           onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
           onPointerDown={(e) => {
@@ -326,7 +326,7 @@ function Index() {
               );
             })}
             {/* starting stalls */}
-            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "done"} />
+            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "climax" || phase === "done"} />
             {/* finish arch */}
             <div className="absolute top-[52px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
             <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
@@ -338,6 +338,14 @@ function Index() {
               </div>
             ))}
           </div>
+          {phase === "climax" && winner !== undefined && (
+            <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none p-4" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
+              <div className="decision-slam cartoon-card bg-accent px-6 py-4 text-center">
+                <div className="font-display text-2xl sm:text-3xl text-ink">THE DECISION IS MADE:</div>
+                <div className="font-display text-5xl sm:text-7xl text-primary break-words">{choices[winner]}</div>
+              </div>
+            </div>
+          )}
           {phase === "countdown" && (
             <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <span key={count} className="font-display text-9xl text-accent countdown-pop drop-shadow">{count || "GO!"}</span>
@@ -375,18 +383,20 @@ function Index() {
 }
 
 function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
-  const racing = phase === "race" && h.finish === undefined;
+  const frozen = phase === "climax" && h.finish === undefined;
+  const champ = phase === "climax" && h.finish !== undefined;
+  const racing = (phase === "race" || phase === "climax") && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const anim = st === "biped" ? "biped" : st === "winded" ? "walk" : st === "nap" || st === "exploded" ? "sleep" : st === "wiped" ? "stumble" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : st === "skate" ? "surf" : st === "ufo" ? "idle" : st === "rocket" ? "rocket" : champ ? "walk" : phase === "race" || frozen ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "ufo" ? "fx-abduct" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? (h.line ?? STATE_INFO[st].bubble) : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
-    <div className="relative">
+    <div className={`relative ${frozen ? "fx-frozen" : ""}`} style={champ ? { transform: "scale(1.5)", transformOrigin: "50% 100%", transition: "transform .4s ease-out" } : undefined}>
       <div className={st === "exploded" ? "fx-launch" : st === "wiped" ? "fx-tumble" : st === "rocket" ? "fx-rumble" : ""}>
         <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : st === "rocket" ? "rotate(-5deg)" : undefined, filter: h.burnt ? "brightness(0.45) sepia(0.6) saturate(0.6)" : undefined }}>
-          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} />
+          <Horse color={COATS[i]!} state={vis} anim={anim} bruised={!!h.bruised} frozen={frozen} />
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
