@@ -317,8 +317,17 @@ function Index() {
             );
           })}
         </aside>
-        {/* track viewport */}
-        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" ? "screen-shake" : ""} relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+        {/* track column: mini-map + viewport */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2 self-start">
+        {/* mini-map: color-coded dots inch toward the finish */}
+        <div className="relative h-7 rounded-full border-[3px] border-ink bg-board/90 mx-1" aria-label="Race progress map">
+          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-sm">🏁</span>
+          {horses.map((h, i) => (
+            <span key={i} className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-ink transition-[left] duration-100"
+              style={{ left: `calc(${Math.min(1, Math.max(0, (h.x - START) / (FINISH - START))) * 96}% + 4px)`, background: COATS[i] }} />
+          ))}
+        </div>
+        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" || shake ? "screen-shake" : ""} relative min-w-0 self-start w-full overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 52 + choices.length * 150 + 26 + 18 }}
           onKeyDown={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) pauseFollow(); }}
           onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
           onPointerDown={(e) => {
@@ -331,7 +340,24 @@ function Index() {
           }}
           onPointerMove={(e) => { const drag = dragRef.current; if (drag) e.currentTarget.scrollLeft = drag.scroll + drag.x - e.clientX; }}
           onPointerUp={() => { dragRef.current = null; }} onPointerCancel={() => { dragRef.current = null; }}>
-          <div className="relative" style={{ width: TRACK, height: 52 + choices.length * 150 + 26 }}>
+          {/* parallax layer 1: far sky drifts at 0.1x */}
+          <div className="sky-bg pointer-events-none absolute top-0 h-[52px] z-0" style={{ left: camX * 0.9, width: vw + 200 }} />
+          {/* parallax layer 2: treeline midground at 0.5x */}
+          <div className="treeline-bg pointer-events-none absolute top-[14px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 }} />
+          {/* live leaderboard, auto-sorted by track position */}
+          {(phase === "race" || phase === "climax") && (
+            <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
+              <div className="font-display text-[11px] tracking-widest text-accent mb-1">LIVE STANDINGS</div>
+              {ranks.map((hi, r) => (
+                <div key={hi} className="flex items-center gap-1.5 text-xs font-bold text-gate leading-5">
+                  <span className="w-4">{r + 1}.</span>
+                  <span className="h-3 w-3 rounded-full border border-ink shrink-0" style={{ background: COATS[hi] }} />
+                  <span className="truncate">{choices[hi]}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="relative" style={{ width: TRACK, height: 52 + choices.length * 150 + 26, zoom, transition: "zoom .3s" }}>
             <div className="h-[26px] crowd-bg" />
             <div className="relative h-[26px] rail"><div className="absolute inset-x-0 -bottom-[18px] h-[18px] bunting z-10" /></div>
             {choices.map((_, i) => (
