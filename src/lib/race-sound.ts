@@ -26,7 +26,7 @@ export class RaceSound {
     if (!this.enabled || !ctx || ctx.state !== "running") return;
     const notes: Partial<Record<Sound, number[]>> = {
       moonwalk: [440, 330, 392, 294], wrongway: [650, 480, 310],
-      banana: [900, 600, 180, 95], nap: [220, 165, 130],
+      stumble: [300, 180, 110], graze: [520, 600, 520, 600], nap: [220, 165, 130],
       victory: [523, 659, 784, 1047, 784, 1047],
     };
     const melody = notes[sound];
@@ -35,7 +35,7 @@ export class RaceSound {
       const oscillator = ctx.createOscillator();
       const gain = ctx.createGain();
       const start = ctx.currentTime + i * 0.12;
-      oscillator.type = sound === "banana" ? "sawtooth" : "triangle";
+      oscillator.type = sound === "stumble" ? "square" : "triangle";
       oscillator.frequency.setValueAtTime(frequency, start);
       oscillator.frequency.exponentialRampToValueAtTime(Math.max(50, frequency * (sound === "victory" ? 1 : 0.7)), start + 0.15);
       gain.gain.setValueAtTime(0, start);

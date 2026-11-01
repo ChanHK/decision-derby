@@ -7,7 +7,7 @@ describe("race behavior", () => {
     expect(forwardCamera(1800, 2100, 2400)).toBe(2100);
   });
   it("gives leaders a higher chance of funny setbacks", () => {
-    const leading = randomState(() => 0.4, true);
+    const leading = randomState(() => 0.3, true);
     expect(leading).toBe("moonwalk");
     expect(randomState(() => 0.4, false)).toBe("normal");
   });
@@ -18,9 +18,17 @@ describe("race behavior", () => {
     expect(speedFor(state, 1, 190, 0.9)).toBeLessThan(0);
   });
   it("allows a leader to fall asleep before the finish and stops movement", () => {
-    const rolls = [0.3, 0.6];
+    const rolls = [0.3, 0.5];
     const state = randomState(() => rolls.shift() ?? 0, true);
     expect(state).toBe("nap");
     expect(speedFor(state, 1, 190, 0.95)).toBe(0);
+  });
+  it("leaders can stumble (slowed) or stop for a grass snack", () => {
+    const stumble = randomState(((r) => () => r.shift() ?? 0)([0.3, 0.7]), true);
+    expect(stumble).toBe("stumble");
+    expect(speedFor(stumble, 1, 190, 0.5)).toBeCloseTo(38);
+    const graze = randomState(((r) => () => r.shift() ?? 0)([0.3, 0.9]), true);
+    expect(graze).toBe("graze");
+    expect(speedFor(graze, 1, 190, 0.5)).toBe(0);
   });
 });

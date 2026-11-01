@@ -216,7 +216,7 @@ function Index() {
   const leadProg = horses.length ? (Math.max(...horses.map((h) => h.x)) - START) / (FINISH - START) : 0;
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
-  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", banana: "bg-accent text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink" };
+  const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink" };
   return (
     <main className="min-h-screen grass-bg flex flex-col">
       <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
@@ -355,16 +355,17 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = phase === "race" && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "nap" ? "sleep" : st === "banana" ? "idle" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
+  const anim = st === "nap" ? "sleep" : st === "stumble" ? "stumble" : st === "graze" ? "graze" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
-  const wrap = st === "banana" ? "fx-slip" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
+  const wrap = st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? STATE_INFO[st].bubble : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
   return (
     <div className="relative">
       <div className={wrap} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
         <Horse color={COATS[i]!} state={vis} anim={anim} />
       </div>
-      {st === "banana" && <span className="absolute left-[120px] top-[100px] text-3xl">🍌</span>}
+      {st === "stumble" && <span className="absolute left-[150px] top-[120px] text-2xl fx-dust">💨</span>}
+      {st === "graze" && <span className="absolute left-[170px] top-[60px] text-2xl fx-float">🦋</span>}
       {st === "nap" && <span className="absolute left-[150px] -top-2 text-2xl fx-float">💤</span>}
       {st === "moonwalk" && <span className="absolute -left-6 top-[90px] text-2xl">✨</span>}
       {st === "wrongway" && <span className="absolute left-[170px] top-6 text-3xl fx-float">❓</span>}

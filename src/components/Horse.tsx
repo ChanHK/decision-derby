@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { HorseState } from "@/lib/race";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -45,6 +45,26 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number): Pose {
       fnU: -75, fnL: 125, ffU: -70, ffL: 120,
       hnU: 75, hnL: -120, hfU: 70, hfL: -115,
       t1: -10, t2: 15, t3: 20,
+    };
+  }
+  if (anim === "stumble") {
+    // Pitch forward onto the front knees, then wobble and shake the head.
+    const shake = 14 * s(t * 22);
+    return {
+      y: 10, body: 16, neck: 22, head: 10 + shake, ear: 35, blink: 0.4,
+      fnU: -20, fnL: 110, ffU: -10, ffL: 100,
+      hnU: -10 + 4 * s(t * 18), hnL: -10, hfU: -18, hfL: -8,
+      t1: 50 + 10 * s(t * 14), t2: 10, t3: 15,
+    };
+  }
+  if (anim === "graze") {
+    // Head dips all the way to the grass, munching.
+    const chew = 4 * s(t * 12);
+    return {
+      y: 0, breathe: 1 + 0.02 * s(t * 2), body: 4,
+      neck: 70, head: 25 + chew, ear: 10 + 6 * s(t * 3), blink,
+      fnU: 6, fnL: 0, ffU: -4, ffL: 0, hnU: -4, hnL: 0, hfU: 4, hfL: 0,
+      t1: 25 + 18 * s(t * 4), t2: 12 * s(t * 4 + 1), t3: 14 * s(t * 4 + 2),
     };
   }
   if (jump >= 0) {
