@@ -83,7 +83,7 @@ describe("gadget crashes", () => {
   });
 });
 
-import { underdogPanic as up, midPackChaos as mp, speedFor, durationFor, LUNGE_EVERY } from "@/lib/race";
+import { underdogPanic as up, midPackChaos as mp, durationFor, LUNGE_EVERY } from "@/lib/race";
 describe("gadget picks", () => {
   it("underdog can pick the hoverboard and rocket", () => {
     expect(up(() => 0.3)).toBe("skate");
