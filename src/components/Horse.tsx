@@ -147,7 +147,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
   animRef.current = anim;
   useEffect(() => {
     // Turbo boost triggers a jump/leap
-    if (state === "turbo" && stateRef.current !== "turbo" && anim === "gallop") jumpStart.current = performance.now();
+    if (state === "turbo" && stateRef.current !== "turbo" && (anim === "gallop" || anim === "sprint")) jumpStart.current = performance.now();
     stateRef.current = state;
   }, [state, anim]);
   useEffect(() => {
@@ -160,7 +160,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       const a = animRef.current, st = stateRef.current;
-      const rate = a === "gallop" ? (st === "turbo" ? 3.6 : st === "tired" ? 1.3 : 2.3) : a === "walk" ? 1 : 0;
+      const rate = a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
       let j = -1;
       if (jumpStart.current >= 0) {
@@ -177,7 +177,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           pose[k] = (pose[k] ?? fallback) * (1 - sleepBlend.current) + (sleeping[k] ?? fallback) * sleepBlend.current;
         }
       }
-      const drunk = st === "drunk" && a === "gallop";
+      const drunk = st === "drunk" && (a === "gallop" || a === "sprint");
       const tired = st === "tired" && a === "gallop";
       const extra: Partial<Record<Bone, number>> = drunk
         ? { body: 10 * s(now / 210), neck: 22 * s(now / 260), head: 28 * s(now / 190 + 1), ear: 35 * s(now / 120),
@@ -285,7 +285,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           {[0, 1, 2].map((i) => <text key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.45}s` }} x={156 + i * 12} y={76 - i * 12}>Z</text>)}
         </g>
       )}
-      {state === "drunk" && anim === "gallop" && (
+      {state === "drunk" && (anim === "gallop" || anim === "sprint") && (
         <g>
           {[0, 1, 2].map((i) => (
             <circle key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.5}s` }} cx={150 + i * 6} cy="20" r={4 + i * 2} fill="var(--gate)" stroke={ink} strokeWidth="1.5" opacity="0.85" />
@@ -293,7 +293,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <text className="fx-bubble" x="160" y="10" fontSize="14" fontWeight="900" fill={ink}>hic!</text>
         </g>
       )}
-      {state === "turbo" && anim === "gallop" && (
+      {state === "turbo" && (anim === "gallop" || anim === "sprint") && (
         <g className="fx-flame">
           {[0, 1, 2].map((i) => (
             <path key={i} d={`M${40 - i * 18} ${70 + i * 18} L${-10 - i * 14} ${66 + i * 18} L${-30 - i * 10} ${74 + i * 18} L${-6 - i * 14} ${80 + i * 18} Z`}
@@ -301,7 +301,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           ))}
         </g>
       )}
-      {anim === "gallop" && state !== "tired" && (
+      {(anim === "gallop" || anim === "sprint") && state !== "tired" && (
         <g className="fx-dust">
           <circle cx="40" cy="128" r="7" fill="var(--track-dust)" />
           <circle cx="26" cy="124" r="5" fill="var(--track-dust)" />

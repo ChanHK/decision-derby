@@ -355,7 +355,7 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const racing = phase === "race" && h.finish === undefined;
   const st: HorseState = racing ? h.state : "normal";
   const vis: HorseState = st === "turbo" || st === "drunk" || st === "tired" || st === "nap" ? st : st === "zoomies" ? "turbo" : "normal";
-  const anim = st === "nap" ? "sleep" : st === "banana" ? "idle" : phase === "race" ? (h.finish !== undefined && h.x > TRACK - 300 ? "walk" : "gallop") : "idle";
+  const anim = st === "nap" ? "sleep" : st === "banana" ? "idle" : phase === "race" ? (h.finish !== undefined ? (h.x > TRACK - 300 ? "walk" : "gallop") : st === "turbo" || st === "zoomies" || (st === "normal" && (h.x - START) / (FINISH - START) >= SPRINT_AT) ? "sprint" : st === "tired" || st === "moonwalk" ? "walk" : "gallop") : "idle";
   const flip = st === "wrongway";
   const wrap = st === "banana" ? "fx-slip" : st === "zoomies" ? "fx-zoom" : st === "moonwalk" ? "fx-moon" : "";
   const bubble = racing ? STATE_INFO[st].bubble : h.finish !== undefined && phase === "race" ? ["Yay!", "Woo!", "Carrots pls", "I'm famous!"][i % 4] : undefined;
