@@ -82,3 +82,15 @@ describe("gadget crashes", () => {
     expect(bo(() => 0.99, "skate")).toBe("wiped");
   });
 });
+
+import { underdogPanic as up, midPackChaos as mp } from "@/lib/race";
+describe("gadget picks", () => {
+  it("underdog can pick the hoverboard and rocket", () => {
+    expect(up(() => 0.9)).toBe("skate");
+    expect(up(() => 0.5)).toBe("rocket");
+  });
+  it("mid-pack can pick gadgets", () => {
+    expect(mp(() => 0)).toBe("rocket");
+    expect(mp(() => 0.25)).toBe("skate");
+  });
+});
