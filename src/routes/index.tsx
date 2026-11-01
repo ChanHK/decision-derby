@@ -438,7 +438,7 @@ function Index() {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 <div className="flex gap-3 rounded-2xl border-[4px] border-ink bg-ink/80 px-5 py-4">
                   {[3, 2, 1].map((n) => (
-                    <span key={n} className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count >= n ? "var(--destructive)" : "var(--board-2)" }} />
+                    <span key={n} className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count > 0 && count <= n ? "var(--destructive)" : "var(--board-2)" }} />
                   ))}
                   <span className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count === 0 ? "var(--grass)" : "var(--board-2)" }} />
                 </div>
