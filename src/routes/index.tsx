@@ -7,6 +7,9 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
+import { LandscapeGate, Stage, useLandscape, useShortScreen } from "@/components/Stage";
+import { COLUMN_CHROME, fitScale, podiumShape, showGate, trackHeight } from "@/lib/landscape";
+
 import { PANIC_POOL, LUNGE_EVERY, LUNGE_SNAP, SELF_SPEED, CURSE_BUBBLES, CURSE_LINES, PANIC_LINES, PANIC_SPEED, PERSONALITIES, SPRINT_AT, STATE_INFO, crashFinish, directorPhase, DIRECTOR_TICK, FALSE_HOPE_DELAY, FALSE_HOPE_BOOSTS as FALSE_HOPE_STATES, IMMUNE_SECONDS, boostFailure, falseHope, isImmune, pileUp, reverseBoost, triggerChance, durationFor, finishPurge, forwardCamera, leaderCurse, midPackChaos, speedFor, underdogPanic, type HorseState } from "@/lib/race";
 
 const pick = (list: string[]) => list[Math.floor(Math.random() * list.length)];
@@ -46,10 +49,18 @@ function Index() {
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [order, setOrder] = useState<number[]>([]);
   const [vw, setVw] = useState(1000);
+  const vwRef = useRef(vw);
+
   const [camX, setCamX] = useState(0);
   const [shake, setShake] = useState(false);
   const shakeT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewRef = useRef<HTMLDivElement>(null);
+  const land = useLandscape();
+  const shape = podiumShape(useShortScreen());
+
+  const [pendingStart, setPendingStart] = useState(false);
+  const [gateOff, setGateOff] = useState(false);
+
   const hRef = useRef<H[]>([]);
   const valid = choices.map((c) => c.trim()).filter(Boolean);
 
@@ -74,10 +85,15 @@ function Index() {
   }
 
   function moveCamera(x: number) {
+    const el = viewRef.current;
+    if (followRef.current && el) {
+      el.scrollLeft = x;
+      x = el.scrollLeft; // the browser clamps to the track's real scroll range
+    }
     autoCam.current = x;
     setCamX(x);
-    if (followRef.current && viewRef.current) viewRef.current.scrollLeft = x;
   }
+
 
   function punchShake() {
     setShake(true);
@@ -97,6 +113,34 @@ function Index() {
   }, [phase]);
 
   const maxCam = Math.max(0, TRACK - vw);
+  const maxCamRef = useRef(maxCam);
+  useEffect(() => { maxCamRef.current = maxCam; }, [maxCam]);
+
+  // The track is drawn to scale: shrink it just enough that every lane fits the screen height.
+  const colRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+  const trackH = trackHeight(choices.length);
+  useEffect(() => {
+    const el = colRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const m = () => setFit(fitScale(el.clientHeight - COLUMN_CHROME, trackH));
+    m();
+    const ro = new ResizeObserver(m);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [trackH, phase]);
+
+  // Once the scale lands, the track box is a different width than it looked at.
+  // Refresh the camera's idea of it so the background layers and the follow
+  // distance are measured against what is really on screen.
+  useEffect(() => {
+    const w = viewRef.current?.clientWidth ?? 0;
+    if (!w) return;
+    vwRef.current = w;
+    setVw(w);
+  }, [fit, phase]);
+
+
 
   function start() {
     if (valid.length < 2) return;
@@ -116,6 +160,29 @@ function Index() {
     setPhase("pan");
   }
 
+  // An upright phone can't show the whole track, so the start waits for sideways.
+  function requestStart() {
+    if (valid.length < 2) return;
+    if (!land.horizontal) { setGateOff(false); setPendingStart(true); return; }
+    start();
+  }
+
+  useEffect(() => {
+    if (!pendingStart || !land.horizontal) return;
+    setPendingStart(false);
+    start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingStart, land.horizontal]);
+
+  const gate = showGate({
+    portrait: land.portrait,
+    forced: land.forced,
+    dismissed: gateOff,
+    started: phase !== "setup",
+    pending: pendingStart,
+  });
+
+
   // pan finish -> start
   useEffect(() => {
     if (phase !== "pan") return;
@@ -123,13 +190,14 @@ function Index() {
     const step = (now: number) => {
       const p = Math.min(1, (now - t0) / D);
       const e = p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
-      moveCamera(maxCam * (1 - e));
+      moveCamera(maxCamRef.current * (1 - e));
       if (p < 1) raf = requestAnimationFrame(step); else { setCount(3); setPhase("countdown"); }
     };
-    moveCamera(maxCam);
+    moveCamera(maxCamRef.current);
     const id = setTimeout(() => (raf = requestAnimationFrame(step)), 700);
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
-  }, [phase, maxCam]);
+  }, [phase]);
+
 
   // One tone per light (1s steps), gate sound at GO!, then a short beat before horses launch.
   useEffect(() => {
@@ -221,7 +289,7 @@ function Index() {
         const sliding = act === "finish" && (h.state === "exploded" || h.state === "wiped");
         if (h.state === "lunge" && h.lungeAt !== undefined && t >= h.lungeAt) {
           // hold the deep lunge, then snap forward instantly
-          h.x += vw * LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
+          h.x += vwRef.current * LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
           void soundRef.current?.playClip("lunge", { volume: 0.7 }); // one sound per lunge
         }
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
@@ -242,8 +310,11 @@ function Index() {
       soundRef.current?.syncRace(hs.map((h) => h.state), true);
       setHorses(hs.map((h) => ({ ...h })));
       // Steady forward-follow at a fixed scale; never zoom with pack spacing.
-      const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.6));
-      const forward = forwardCamera(Math.max(0, camR), target, maxCam);
+      const camMax = maxCamRef.current;
+      const target = Math.min(camMax, Math.max(0, leader.x - vwRef.current * 0.6));
+
+      const forward = forwardCamera(Math.max(0, camR), target, camMax);
+
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
       moveCamera(camR);
       raf = requestAnimationFrame(step);
@@ -269,16 +340,16 @@ function Index() {
     return () => { cancelAnimationFrame(raf); clearTimeout(id); };
   }, [phase, order]);
 
-  if (phase === "setup") {
-    return (
-      <main className="min-h-screen grass-bg flex items-center justify-center p-4">
-        <div className="cartoon-card w-full max-w-lg p-6">
+  const setupScreen = (
+    <main className="h-full grass-bg flex p-4 overflow-y-auto">
+      <div className="setup-card cartoon-card w-full max-w-lg p-6 m-auto">
+
           <div className="flex justify-end mb-2">{soundToggle}</div>
-          <h1 className="font-display text-5xl text-center text-primary">Derby Decider</h1>
-          <p className="text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
-          <div className="mt-6 space-y-3">
+          <h1 className="setup-title font-display text-5xl text-center text-primary">Derby Decider</h1>
+          <p className="setup-lead text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
+          <div className="setup-rows mt-6 space-y-3">
             {choices.map((c, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="setup-row flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full border-[3px] border-ink shrink-0" style={{ background: COATS[i] }} />
                 <input value={c} maxLength={30} placeholder={`Choice ${i + 1}`}
                   onChange={(e) => setChoices(choices.map((x, j) => (j === i ? e.target.value : x)))}
@@ -291,16 +362,16 @@ function Index() {
             ))}
           </div>
           {choices.length < 5 && (
-            <button onClick={() => setChoices([...choices, ""])} className="mt-3 w-full rounded-xl border-[3px] border-dashed border-ink py-2 font-bold text-muted-foreground">+ Add choice</button>
+            <button onClick={() => setChoices([...choices, ""])} className="setup-add mt-3 w-full rounded-xl border-[3px] border-dashed border-ink py-2 font-bold text-muted-foreground">+ Add choice</button>
           )}
-          <button disabled={valid.length < 2} onClick={start} className="cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
+          <button disabled={valid.length < 2} onClick={requestStart} className="setup-start cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
             And they're off! 🏁
           </button>
           {valid.length < 2 && <p className="text-center text-sm mt-2 text-muted-foreground">Enter at least 2 choices.</p>}
-        </div>
-      </main>
-    );
-  }
+      </div>
+    </main>
+  );
+
 
   const winner = order[0];
   const ranks = horses.map((_, i) => i).sort((a, b) => {
@@ -312,33 +383,34 @@ function Index() {
   const sprinting = phase === "race" && leadProg >= SPRINT_AT && order.length === 0;
   const SUF = ["st", "nd", "rd", "th", "th"];
   const STATE_CHIP: Record<HorseState, string> = { normal: "bg-secondary text-ink", turbo: "bg-accent text-ink", drunk: "bg-primary text-primary-foreground", tired: "bg-muted text-ink", moonwalk: "bg-accent text-ink", wrongway: "bg-primary text-primary-foreground", stumble: "bg-primary text-primary-foreground", graze: "bg-secondary text-ink", nap: "bg-muted text-ink", zoomies: "bg-accent text-ink", biped: "bg-accent text-ink", winded: "bg-muted text-ink", rocket: "bg-accent text-ink", ufo: "bg-primary text-primary-foreground", skate: "bg-accent text-ink", exploded: "bg-primary text-primary-foreground", wiped: "bg-primary text-primary-foreground", timeout: "bg-muted text-ink", standby: "bg-secondary text-ink", smash: "bg-accent text-ink", glassdoor: "bg-primary text-primary-foreground", soup: "bg-secondary text-ink", tactile: "bg-accent text-ink", jet: "bg-accent text-ink", scuba: "bg-secondary text-ink", laksa: "bg-primary text-primary-foreground", copter: "bg-accent text-ink", lunge: "bg-accent text-ink" };
-  return (
-    <main className="min-h-screen grass-bg flex flex-col">
-      <header className="flex items-center justify-between gap-3 flex-wrap px-4 py-3">
-        <h1 className="font-display text-3xl text-primary-foreground" style={{ WebkitTextStroke: "2px var(--ink)" }}>Derby Decider</h1>
-        <div className="flex gap-2 items-center flex-wrap">
-        {!following && <Button variant="secondary" className="cartoon-btn" onClick={resumeFollow}><Crosshair /> Snap to leader</Button>}
+  const raceScreen = (
+    <main className="h-full min-h-0 grass-bg flex flex-col overflow-hidden">
+      <header className="flex items-center justify-between gap-2 flex-wrap px-2 py-1.5 sm:px-4 sm:py-3">
+        <h1 className="font-display text-2xl sm:text-3xl text-primary-foreground truncate" style={{ WebkitTextStroke: "2px var(--ink)" }}>Derby Decider</h1>
+        <div className="flex gap-2 items-center flex-wrap min-w-0">
+        {!following && <Button variant="secondary" size="sm" className="cartoon-btn" onClick={resumeFollow}><Crosshair /> Snap to leader</Button>}
         {soundToggle}
-        <span className={`font-display text-xl px-3 py-1 rounded-full border-[3px] border-ink ${sprinting ? "bg-primary text-primary-foreground sprint-glow" : "bg-card text-ink"}`}>
+        <span className={`font-display text-sm sm:text-xl px-2 py-0.5 sm:px-3 sm:py-1 rounded-full border-[3px] border-ink shrink-0 ${sprinting ? "bg-primary text-primary-foreground sprint-glow" : "bg-card text-ink"}`}>
           {phase === "pan" ? "Surveying the track…" : phase === "countdown" ? "Get ready…" : sprinting ? "🔥 FINAL SPRINT!" : phase === "race" ? "Race on!" : "Finished!"}
         </span>
         </div>
       </header>
-      <div className="flex flex-1 px-2 pb-4 gap-3">
-        {/* tote board */}
-        <aside className="tote w-40 sm:w-56 shrink-0 self-start p-2">
-          <div className="font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
+      <div className="flex flex-1 min-h-0 px-1 pb-1 sm:px-2 sm:pb-4 gap-2 sm:gap-3">
+        {/* tote board: choice labels beside the lanes */}
+        <aside className="tote w-32 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto flex flex-col p-1.5 sm:p-2">
+
+          <div className="tote-head font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
             const h = horses[i]; const rank = ranks.indexOf(i); const done = phase === "climax" ? order[0] === i : order.includes(i);
             return (
-              <div key={i} className="h-[150px] flex items-center">
+              <div key={i} className="tote-slot h-[150px] flex items-center">
                 <div className="tote-row w-full p-2">
                   <div className="flex items-center gap-2">
-                    <span className="h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
+                    <span className="tote-badge h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
                     <div className="font-bold truncate flex-1">{c}</div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between gap-1">
-                    <span className={`font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
+                  <div className="tote-line mt-2 flex items-center justify-between gap-1">
+                    <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
                     {h && (phase === "race" || phase === "climax") && !done && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
@@ -351,8 +423,10 @@ function Index() {
             );
           })}
         </aside>
-        {/* track column: mini-map + viewport */}
-        <div className="flex-1 min-w-0 flex flex-col gap-2 self-start">
+        {/* track column: scaled to fit the screen so every lane stays visible */}
+        <div ref={colRef} className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
+          <div className="absolute top-0 left-0 flex flex-col gap-2" style={{ width: `calc(100% / ${fit})`, height: `calc(100% / ${fit})`, transform: `scale(${fit})`, transformOrigin: "top left" }}>
+
         {/* mini-map: color-coded dots inch toward the finish */}
         <div className="relative h-7 rounded-full border-[3px] border-ink bg-board/90 mx-1" aria-label="Race progress map">
           <span className="absolute right-1 top-1/2 -translate-y-1/2 text-sm">🏁</span>
@@ -375,9 +449,9 @@ function Index() {
           onPointerMove={(e) => { const drag = dragRef.current; if (drag) e.currentTarget.scrollLeft = drag.scroll + drag.x - e.clientX; }}
           onPointerUp={() => { dragRef.current = null; }} onPointerCancel={() => { dragRef.current = null; }}>
           {/* parallax layer 1: far sky drifts at 0.1x */}
-          <div className="sky-bg pointer-events-none absolute top-0 h-[64px] z-0 border-b-[3px] border-ink" style={{ left: camX * 0.9, width: vw + 200 }} />
+          <div className="sky-bg pointer-events-none absolute top-0 h-[64px] z-0 border-b-[3px] border-ink" style={{ left: camX * 0.9, width: vw + 200 + camX * 0.1 }} />
           {/* parallax layer 2: treeline midground at 0.5x */}
-          <div className="treeline-bg pointer-events-none absolute top-[26px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 }} />
+          <div className="treeline-bg pointer-events-none absolute top-[26px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 + camX * 0.5 }} />
           {/* live leaderboard, auto-sorted by track position */}
           {(phase === "race" || phase === "climax") && (
             <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
@@ -433,7 +507,7 @@ function Index() {
             ))}
           </div>
           {/* parallax layer 4: blurred foreground rail whips past at 1.5x */}
-          <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 }} />
+          <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 + camX * 0.5 }} />
           {phase === "climax" && winner !== undefined && (
             <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none p-4" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <div className="decision-slam cartoon-card bg-accent px-6 py-4 text-center">
@@ -465,27 +539,29 @@ function Index() {
             </div>
           )}
         </div>
+          </div>
         </div>
       </div>
+
 
       {phase === "done" && winner !== undefined && (
         <div className="fixed inset-0 bg-ink/60 flex items-center justify-center p-4 z-[200]">
           <Confetti />
-          <div className="cartoon-card relative w-full max-w-lg p-6 text-center">
+          <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-[92dvh] overflow-y-auto">
             <div className="flex justify-end mb-2">{soundToggle}</div>
-            <p className="font-bold text-muted-foreground">The horses have decided…</p>
-            <h2 className="font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
-            <div className="flex items-end justify-center gap-3 mt-6">
+            <p className="podium-lead font-bold text-muted-foreground">The horses have decided…</p>
+            <h2 className="podium-title font-display text-5xl text-primary mt-1 break-words">{choices[winner]}</h2>
+            <div className="podium-row flex items-end justify-center gap-3 mt-6">
               {[1, 0, 2].map((p) => order[p] !== undefined && (
-                <div key={p} className="flex flex-col items-center w-28">
-                  <Horse color={COATS[order[p]!]!} anim={p === 0 ? "jump" : "idle"} size={110} />
+                <div key={p} className="podium-col flex flex-col items-center w-28">
+                  <Horse color={COATS[order[p]!]!} anim={p === 0 ? "jump" : "idle"} size={shape.horse} />
                   <div className="text-sm font-bold truncate w-full">{choices[order[p]]}</div>
                   <div className="w-full rounded-t-lg border-[3px] border-ink bg-secondary font-display text-3xl flex items-center justify-center"
-                    style={{ height: p === 0 ? 96 : p === 1 ? 66 : 44, background: p === 0 ? "var(--gold)" : undefined }}>{p + 1}</div>
+                    style={{ height: shape.blocks[p] ?? 44, background: p === 0 ? "var(--gold)" : undefined }}>{p + 1}</div>
                 </div>
               ))}
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="podium-actions mt-6 grid grid-cols-2 gap-3">
               <Button onClick={start} className="cartoon-btn h-auto bg-primary text-primary-foreground py-3 font-display text-xl">Race again</Button>
               <Button variant="secondary" onClick={() => setPhase("setup")} className="cartoon-btn h-auto py-3 font-display text-xl">Edit choices</Button>
             </div>
@@ -494,7 +570,17 @@ function Index() {
       )}
     </main>
   );
+
+  return (
+    <>
+      <Stage rotated={land.rotated && phase !== "setup"}>
+        {phase === "setup" ? setupScreen : raceScreen}
+      </Stage>
+      {gate && <LandscapeGate onPlay={() => void land.playSideways()} onDismiss={() => setGateOff(true)} />}
+    </>
+  );
 }
+
 
 function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
   const frozen = phase === "climax" && h.finish === undefined;
