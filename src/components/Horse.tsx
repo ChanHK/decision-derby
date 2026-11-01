@@ -310,6 +310,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
   const rootRef = useRef<SVGGElement | null>(null);
   const breatheRef = useRef<SVGGElement | null>(null);
   const eyeRef = useRef<SVGGElement | null>(null);
+  const shadowRef = useRef<SVGEllipseElement | null>(null);
   const animRef = useRef(anim);
   const stateRef = useRef(state);
   const jumpStart = useRef<number>(-1);
@@ -372,6 +373,10 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
       rootRef.current?.setAttribute("transform", `translate(0 ${yy.toFixed(2)}) rotate(${(sway + (pose.rot ?? 0)).toFixed(2)} 100 110)`);
       breatheRef.current?.setAttribute("transform", `scale(1 ${(pose.breathe ?? 1).toFixed(3)})`);
       eyeRef.current?.setAttribute("transform", `scale(1 ${pose.blink ?? 1})`);
+      // dynamic drop shadow: the higher the root bone lifts, the smaller and fainter the ground shadow
+      const lift = Math.min(1, Math.max(0, -yy / 34));
+      shadowRef.current?.setAttribute("transform", `translate(100 134) scale(${(1 - lift * 0.5).toFixed(3)} ${(1 - lift * 0.35).toFixed(3)}) translate(-100 -134)`);
+      shadowRef.current?.setAttribute("opacity", (0.18 * (1 - lift * 0.65)).toFixed(3));
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -380,11 +385,9 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
 
   const ink = "var(--ink)";
   const R = (b: Bone) => (el: SVGGElement | null) => { refs.current[b] = el; };
-  const shadowScale = anim === "jump" ? 0.7 : 1;
-
   return (
     <svg viewBox="0 0 200 140" width={size} height={size * 0.7} style={{ overflow: "visible" }}>
-      <ellipse cx="100" cy="134" rx={62 * shadowScale} ry="6" fill={ink} opacity="0.18" />
+      <ellipse ref={shadowRef} cx="100" cy="134" rx="62" ry="6" fill={ink} opacity="0.18" />
       <g ref={rootRef}>
         {anim === "surf" && <image href={hoverArt} x={-12} y={88} width={224} height={112} />}
         <g ref={R("body")}>

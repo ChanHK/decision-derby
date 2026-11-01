@@ -46,6 +46,11 @@ function Index() {
   const dragRef = useRef<{ x: number; scroll: number } | null>(null);
   const [order, setOrder] = useState<number[]>([]);
   const [vw, setVw] = useState(1000);
+  const [camX, setCamX] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  const [shake, setShake] = useState(false);
+  const shakeT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const hRef = useRef<H[]>([]);
   const valid = choices.map((c) => c.trim()).filter(Boolean);
@@ -72,7 +77,14 @@ function Index() {
 
   function moveCamera(x: number) {
     autoCam.current = x;
+    setCamX(x);
     if (followRef.current && viewRef.current) viewRef.current.scrollLeft = x;
+  }
+
+  function punchShake() {
+    setShake(true);
+    if (shakeT.current) clearTimeout(shakeT.current);
+    shakeT.current = setTimeout(() => setShake(false), 220);
   }
 
   const soundToggle = <Button variant="secondary" size="icon" className="cartoon-btn shrink-0" onClick={toggleSound}
@@ -92,6 +104,7 @@ function Index() {
     if (valid.length < 2) return;
     setChoices(valid);
     followRef.current = true; setFollowing(true); autoCam.current = 0;
+    zoomRef.current = 1; setZoom(1); setCamX(0);
     const deck = [...PERSONALITIES].sort(() => Math.random() - 0.5);
     hRef.current = valid.map((_, i) => {
       const personality = deck[i] ?? PERSONALITIES[0];
@@ -117,10 +130,11 @@ function Index() {
     return () => { clearTimeout(id); cancelAnimationFrame(raf); };
   }, [phase, maxCam]);
 
+  // tension start: red lights stack up one by one (horses locked in idle), green = gates burst
   useEffect(() => {
     if (phase !== "countdown") return;
     if (count === 0) { const id = setTimeout(() => setPhase("race"), 600); return () => clearTimeout(id); }
-    const id = setTimeout(() => setCount((c) => c - 1), 800);
+    const id = setTimeout(() => setCount((c) => c - 1), 750);
     return () => clearTimeout(id);
   }, [phase, count]);
 
@@ -146,7 +160,7 @@ function Index() {
             const crashed = purged === "exploded" || purged === "wiped";
             h.state = purged; h.line = undefined; h.panic = false;
             h.next = t + (crashed ? 99 : 0); // crashes slide all the way over the line
-            if (crashed) soundRef.current?.play(purged);
+            if (crashed) { soundRef.current?.play(purged); if (purged === "exploded") punchShake(); }
           }
         } else if (t > h.next) {
           if (h.state !== "normal") {
@@ -154,7 +168,7 @@ function Index() {
             const crash = h.state === "rocket" ? "exploded" : h.state === "skate" ? "wiped" : "normal";
             h.state = crash; h.line = undefined; h.panic = false;
             h.next = t + (crash === "normal" ? 0.6 + Math.random() * 0.6 : durationFor(crash));
-            if (crash !== "normal") soundRef.current?.play(crash);
+            if (crash !== "normal") { soundRef.current?.play(crash); if (crash === "exploded") punchShake(); }
           } else if (act === "rubber" && rubber) {
             let s: HorseState = "normal"; let line: string | undefined;
             if (h === leader) { s = leaderCurse(Math.random); line = pick(CURSE_BUBBLES[s] ?? CURSE_LINES); }
@@ -162,7 +176,7 @@ function Index() {
             else if (rank >= 1 && Math.random() < 0.5) s = midPackChaos(Math.random);
             h.state = s; h.line = line;
             h.next = t + (s === "normal" ? 0.5 : s === "biped" ? 2.2 : durationFor(s));
-            if (s !== "normal") soundRef.current?.play(s);
+            if (s !== "normal") { soundRef.current?.play(s); if (s === "glassdoor") punchShake(); }
           }
         }
         if (h.state === "exploded") h.burnt = true;
@@ -187,7 +201,14 @@ function Index() {
         }
       }
       setHorses(hs.map((h) => ({ ...h })));
-      const target = Math.min(maxCam, Math.max(0, leader.x - vw * 0.4));
+      // bounding-box zoom: tight pack zooms in to 1.3x, spread pack eases back to 1.0x
+      const spread = leader.x - lastH.x;
+      const zTarget = spread < vw * 0.55 ? 1.3 : 1;
+      zoomRef.current += (zTarget - zoomRef.current) * Math.min(1, dt * 3);
+      setZoom(zoomRef.current);
+      const effVw = vw / zoomRef.current;
+      // leader pan: keep 1st place anchored near the 60% mark of the screen
+      const target = Math.min(maxCam, Math.max(0, leader.x - effVw * 0.6));
       const forward = forwardCamera(Math.max(0, camR), target, maxCam);
       camR = camR < 0 ? forward : camR + (forward - camR) * Math.min(1, dt * 6);
       moveCamera(camR);
@@ -272,7 +293,7 @@ function Index() {
       <div className="flex flex-1 px-2 pb-4 gap-3">
         {/* tote board */}
         <aside className="tote w-40 sm:w-56 shrink-0 self-start p-2">
-          <div className="font-display text-center text-accent text-lg h-[52px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
+          <div className="font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
             const h = horses[i]; const rank = ranks.indexOf(i); const done = phase === "climax" ? order[0] === i : order.includes(i);
             return (
@@ -296,8 +317,17 @@ function Index() {
             );
           })}
         </aside>
-        {/* track viewport */}
-        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" ? "screen-shake" : ""} relative flex-1 min-w-0 self-start overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 52 + choices.length * 150 + 26 + 18 }}
+        {/* track column: mini-map + viewport */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2 self-start">
+        {/* mini-map: color-coded dots inch toward the finish */}
+        <div className="relative h-7 rounded-full border-[3px] border-ink bg-board/90 mx-1" aria-label="Race progress map">
+          <span className="absolute right-1 top-1/2 -translate-y-1/2 text-sm">🏁</span>
+          {horses.map((h, i) => (
+            <span key={i} className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-ink transition-[left] duration-100"
+              style={{ left: `calc(${Math.min(1, Math.max(0, (h.x - START) / (FINISH - START))) * 96}% + 4px)`, background: COATS[i] }} />
+          ))}
+        </div>
+        <div ref={viewRef} aria-label="Race track" tabIndex={0} className={`race-scroll ${phase === "climax" || shake ? "screen-shake" : ""} relative min-w-0 self-start w-full overflow-x-auto overflow-y-hidden rounded-2xl border-[4px] border-ink`} style={{ height: 116 + choices.length * 150 + 26 + 18 }}
           onKeyDown={(e) => { if (["ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) pauseFollow(); }}
           onWheel={(e) => { pauseFollow(); if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && viewRef.current) { viewRef.current.scrollLeft += e.deltaY; } }}
           onPointerDown={(e) => {
@@ -310,7 +340,25 @@ function Index() {
           }}
           onPointerMove={(e) => { const drag = dragRef.current; if (drag) e.currentTarget.scrollLeft = drag.scroll + drag.x - e.clientX; }}
           onPointerUp={() => { dragRef.current = null; }} onPointerCancel={() => { dragRef.current = null; }}>
-          <div className="relative" style={{ width: TRACK, height: 52 + choices.length * 150 + 26 }}>
+          {/* parallax layer 1: far sky drifts at 0.1x */}
+          <div className="sky-bg pointer-events-none absolute top-0 h-[64px] z-0 border-b-[3px] border-ink" style={{ left: camX * 0.9, width: vw + 200 }} />
+          {/* parallax layer 2: treeline midground at 0.5x */}
+          <div className="treeline-bg pointer-events-none absolute top-[26px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 }} />
+          {/* live leaderboard, auto-sorted by track position */}
+          {(phase === "race" || phase === "climax") && (
+            <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
+              <div className="font-display text-[11px] tracking-widest text-accent mb-1">LIVE STANDINGS</div>
+              {ranks.map((hi, r) => (
+                <div key={hi} className="flex items-center gap-1.5 text-xs font-bold text-gate leading-5">
+                  <span className="w-4">{r + 1}.</span>
+                  <span className="h-3 w-3 rounded-full border border-ink shrink-0" style={{ background: COATS[hi] }} />
+                  <span className="truncate">{choices[hi]}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="relative" style={{ width: TRACK, height: 116 + choices.length * 150 + 26, zoom, transition: "zoom .3s" }}>
+            <div className="h-[64px]" />
             <div className="h-[26px] crowd-bg" />
             <div className="relative h-[26px] rail"><div className="absolute inset-x-0 -bottom-[18px] h-[18px] bunting z-10" /></div>
             {choices.map((_, i) => (
@@ -325,7 +373,7 @@ function Index() {
             {[0.25, 0.5, SPRINT_AT].map((p) => {
               const x = START + 200 + (FINISH - START) * p;
               return (
-                <div key={p} className="absolute top-[26px] z-10 flex flex-col items-center" style={{ left: x }}>
+                <div key={p} className="absolute top-[90px] z-10 flex flex-col items-center" style={{ left: x }}>
                   <span className={`font-display text-sm px-2 rounded border-2 border-ink ${p === SPRINT_AT ? "bg-primary text-primary-foreground" : "bg-card text-ink"}`}>
                     {p === SPRINT_AT ? "SPRINT!" : `${Math.round((1 - p) * 400)}m`}
                   </span>
@@ -333,18 +381,20 @@ function Index() {
               );
             })}
             {/* starting stalls */}
-            <StartingGate lanes={choices.length} left={START} open={phase === "race" || phase === "climax" || phase === "done"} />
+            <StartingGate lanes={choices.length} left={START} top={116} open={phase === "race" || phase === "climax" || phase === "done"} />
             {/* finish arch */}
-            <div className="absolute top-[52px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
-            <div className="absolute top-[2px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
-            <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
-            <div className="absolute top-[26px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
+            <div className="absolute top-[116px] w-5 finish-line" style={{ left: FINISH + 186, height: choices.length * 150 }} />
+            <div className="absolute top-[66px] z-20 font-display text-xl text-ink bg-accent border-[3px] border-ink px-3 rounded-lg" style={{ left: FINISH + 140 }}>🏁 FINISH</div>
+            <div className="absolute top-[90px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 170 }} />
+            <div className="absolute top-[90px] bottom-0 w-3 bg-gate border-x-2 border-ink z-0" style={{ left: FINISH + 214 }} />
             {horses.map((h, i) => (
-              <div key={i} className="absolute z-30" style={{ top: 52 + i * 150 + 22, left: h.x, transition: "none" }}>
+              <div key={i} className="absolute z-30" style={{ top: 116 + i * 150 + 22, left: h.x, transition: "none" }}>
                 <HorseActor h={h} i={i} phase={phase} />
               </div>
             ))}
           </div>
+          {/* parallax layer 4: blurred foreground rail whips past at 1.5x */}
+          <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 }} />
           {phase === "climax" && winner !== undefined && (
             <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none p-4" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <div className="decision-slam cartoon-card bg-accent px-6 py-4 text-center">
@@ -354,10 +404,21 @@ function Index() {
             </div>
           )}
           {phase === "countdown" && (
-            <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
-              <span key={count} className="font-display text-9xl text-accent countdown-pop drop-shadow">{count || "GO!"}</span>
+            <div className="absolute top-0 bottom-0 z-[100] pointer-events-none" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
+              {/* dim the track, spotlight the starting line */}
+              <div className="spotlight absolute inset-0" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                <div className="flex gap-3 rounded-2xl border-[4px] border-ink bg-ink/80 px-5 py-4">
+                  {[3, 2, 1].map((n) => (
+                    <span key={n} className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count >= n ? "var(--destructive)" : "var(--board-2)" }} />
+                  ))}
+                  <span className="h-10 w-10 rounded-full border-[3px] border-ink" style={{ background: count === 0 ? "var(--grass)" : "var(--board-2)" }} />
+                </div>
+                {count === 0 && <span className="font-display text-8xl text-accent countdown-pop drop-shadow">GO!</span>}
+              </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
@@ -412,6 +473,7 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
       {(st === "jet" || st === "laksa") && [0, 1, 2, 3].map((k) => <span key={k} className="fx-speedline absolute h-[3px] rounded-full bg-card" style={{ left: -70 - k * 18, top: 50 + k * 18, width: 90 - k * 10, animationDelay: `${k * 0.1}s` }} />)}
+      {anim === "sprint" && [0, 1, 2].map((k) => <span key={k} className="fx-dust hoof-dust absolute h-3 w-4" style={{ left: 30 + k * 46, top: 126, animationDelay: `${k * 0.14}s` }} />)}
       {st === "timeout" && <span className="fx-spin absolute left-[150px] top-[10px] h-9 w-9 rounded-full border-[5px] border-ink/20 border-t-ink" />}
       {st === "exploded" && <RocketBurst />}
       {st === "wiped" && <BoardBreak />}
