@@ -31,7 +31,7 @@ const FINISH = 3600;
 const START = 120;
 
 type Phase = "setup" | "pan" | "countdown" | "race" | "climax" | "done";
-type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number; lastBoost?: HorseState; immuneUntil?: number; failAt?: number; reverse?: boolean };
+type H = { x: number; state: HorseState; next: number; base: number; kick: number; finish?: number; chase?: number | undefined; bipedAt?: number; bumpCd?: number; line?: string | undefined; burnt?: boolean; bruised?: boolean; panic?: boolean; lungeAt?: number; lastBoost?: HorseState; immuneUntil?: number; failAt?: number | undefined; reverse?: boolean };
 
 function Index() {
   const [choices, setChoices] = useState<string[]>(["Pizza", "Sushi", "Tacos"]);
@@ -183,7 +183,7 @@ function Index() {
             if (crashed) { soundRef.current?.play(purged); if (purged === "exploded") punchShake(); }
           } else if (t > h.next && PANIC_POOL.includes(h.state) && h.state !== "rocket" && h.state !== "skate") {
             // non-mount boosts finish their normal run time, then the horse sprints
-            h.state = "normal"; h.line = undefined; h.panic = false;
+            h.state = "normal"; h.line = undefined; h.panic = false; h.reverse = false;
           }
         } else if (t > h.next) {
           if (h.state !== "normal") {
@@ -229,7 +229,7 @@ function Index() {
         h.x = Math.max(START - 40, h.x + v * dir * dt);
         if (h.x >= FINISH) {
           // climax: the first nose over the line freezes everyone else
-          h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false;
+          h.finish = t; h.state = "normal"; h.line = undefined; h.panic = false; h.reverse = false;
           soundRef.current?.syncRace([], false);
           soundRef.current?.play("victory");
           const fin = [i, ...hs.map((_, k) => k).filter((k) => k !== i).sort((a, b) => hs[b]!.x - hs[a]!.x)];
