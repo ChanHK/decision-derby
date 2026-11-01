@@ -38,14 +38,15 @@ describe("replacement race audio", () => {
     expect(sources[0]?.stop).not.toHaveBeenCalled();
   });
 
-  it("keeps the beam until the last overlapping UFO animation ends", async () => {
+  it("two abducted horses play two beams; each stops when its own abduction ends", async () => {
     const sound = new RaceSound(); sound.setEnabled(true);
     sound.syncRace(["ufo", "ufo"], true); await flush();
+    expect(sources).toHaveLength(3);
     sound.syncRace(["normal", "ufo"], true); await flush();
-    expect(sources).toHaveLength(2);
-    expect(sources[1]?.stop).not.toHaveBeenCalled();
-    sound.syncRace(["normal", "normal"], true);
     expect(sources[1]?.stop).toHaveBeenCalledTimes(1);
+    expect(sources[2]?.stop).not.toHaveBeenCalled();
+    sound.syncRace(["normal", "normal"], true);
+    expect(sources[2]?.stop).toHaveBeenCalledTimes(1);
   });
 
   it("cancels a loading beam when the animation ends before decoding", async () => {
