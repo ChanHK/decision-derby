@@ -61,3 +61,13 @@ describe("sideways race stage", () => {
     expect(showGate({ portrait: true, forced: false, dismissed: false, started: false, pending: false })).toBe(false);
   });
 });
+
+describe("podiumShape", () => {
+  it("shrinks the winners when the screen is short", () => {
+    const short = podiumShape(true);
+    const tall = podiumShape(false);
+    expect(short.horse).toBeLessThan(tall.horse);
+    expect(short.blocks).toEqual([64, 46, 30]);
+    expect(tall.blocks).toEqual([96, 66, 44]);
+  });
+});
