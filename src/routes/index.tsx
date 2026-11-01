@@ -549,7 +549,7 @@ function Index() {
       </div>
 
 
-      {(phase === "done" || (showResult && phase !== "setup")) && winner !== undefined && (
+      {(phase === "done" || (showResult && (phase === "race" || phase === "climax"))) && winner !== undefined && (
         <div className="fixed inset-0 bg-ink/30 flex items-center justify-center p-4 z-[200]">
           <Confetti />
           <div className="podium-card cartoon-card relative w-full max-w-lg p-6 text-center max-h-full overflow-y-auto">
