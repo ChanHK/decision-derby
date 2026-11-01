@@ -218,7 +218,7 @@ function Index() {
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); soundRef.current?.stopLoop("gallop"); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
