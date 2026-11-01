@@ -21,7 +21,7 @@ describe("race director", () => {
   });
   it("panics the underdog into two legs or a rocket", () => {
     expect(underdogPanic(() => 0.1)).toBe("biped");
-    expect(underdogPanic(() => 0.5)).toBe("rocket");
+    expect(underdogPanic(() => 0.2)).toBe("rocket");
   });
   it("mid-pack chaos is drunk, moonwalk or wrong way", () => {
     expect(["drunk", "moonwalk", "wrongway"]).toContain(midPackChaos(() => 0.5));

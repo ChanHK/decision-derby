@@ -3,7 +3,7 @@ import type { HorseState } from "@/lib/race";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 
-export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped" | "rocket" | "surf" | "timeout" | "standby" | "smash" | "glassdoor" | "soup" | "tactile";
+export type HorseAnim = "idle" | "walk" | "gallop" | "sprint" | "jump" | "sleep" | "stumble" | "graze" | "biped" | "rocket" | "surf" | "timeout" | "standby" | "smash" | "glassdoor" | "soup" | "tactile" | "jet" | "scuba" | "laksa" | "copter" | "lunge";
 
 /** Bone ids of the modular puppet rig. */
 type Bone =
@@ -107,6 +107,47 @@ function solve(anim: HorseAnim, p: number, t: number, jump: number, since = 0): 
       hnU: 70, hnL: -120, hfU: 66, hfL: -115,
       fnU: -40 + 18 * sq, fnL: -50, ffU: -40 - 18 * sq, ffL: -50,
       t1: 50 + 10 * s(t * 3), t2: 10 * s(t * 3 + 1), t3: 12 * s(t * 3 + 2),
+    };
+  }
+  if (anim === "jet") {
+    // Airborne, spine rigid and level, front legs pinned back against the chest, tail dead straight.
+    const v = 0.8 * s(t * 60);
+    return {
+      y: -26 + v, body: 0, neck: -6, head: -4, ear: -70, blink,
+      fnU: 82, fnL: 18, ffU: 76, ffL: 22, hnU: 62, hnL: -8, hfU: 56, hfL: -6,
+      t1: 92 + v, t2: 0, t3: 0,
+    };
+  }
+  if (anim === "scuba") {
+    // Diving pitch, slow relaxed frog-kick instead of a gallop.
+    const w = t * 2.6;
+    const kick = Math.max(0, s(w + 1));
+    return {
+      y: -40 + 3 * s(t * 1.3), body: 15, neck: -12, head: -6, ear: -30, blink,
+      fnU: -40 + 30 * s(w), fnL: 70 * kick, ffU: -34 + 30 * s(w + 0.3), ffL: 64 * kick,
+      hnU: 40 + 30 * s(w), hnL: -70 * kick, hfU: 34 + 30 * s(w + 0.3), hfL: -64 * kick,
+      t1: 60 + 15 * s(w), t2: 10 * s(w + 1), t3: 12 * s(w + 2),
+    };
+  }
+  if (anim === "laksa") {
+    // Frantic blurred gallop with the neck stretched all the way forward.
+    return { ...solve("gallop", p, t, -1), neck: -42, head: -12, ear: -55, blink: 1, body: -4 };
+  }
+  if (anim === "copter") {
+    // Dangling from the rotor: spine sags, all four legs hang limp and sway.
+    const sw = 7 * s(t * 2.2);
+    return {
+      y: -52 + 4 * s(t * 3), body: 20, neck: 24, head: 16, ear: 55, blink: 0.4,
+      fnU: -20 + sw, fnL: 6, ffU: -20 + sw * 0.8, ffL: 4, hnU: -20 + sw, hnL: -4, hfU: -20 + sw * 0.8, hfL: -3,
+      t1: -10 + sw, t2: sw, t3: sw,
+    };
+  }
+  if (anim === "lunge") {
+    // Deep split-step: near front leg locked at full reach, hind legs dragging behind.
+    return {
+      y: 16, body: -4, neck: -14, head: -8, ear: -40, blink,
+      fnU: -72, fnL: 0, ffU: -24, ffL: 30, hnU: 62, hnL: 0, hfU: 56, hfL: 0,
+      t1: 72, t2: 6, t3: 8,
     };
   }
   if (anim === "sleep") {
@@ -297,7 +338,7 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
       if (animStart.current.anim !== a) animStart.current = { anim: a, at: now };
       if (a === "timeout") { raf = requestAnimationFrame(tick); return; } // system crash: solver frozen mid-stride
       const since = (now - animStart.current.at) / 1000;
-      const rate = a === "biped" ? 3.6 : a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" || st === "winded" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
+      const rate = a === "laksa" ? 8.4 : a === "biped" ? 3.6 : a === "sprint" ? (st === "turbo" ? 4.2 : 3.3) : a === "gallop" ? (st === "tired" || st === "winded" ? 1.3 : 2.1) : a === "walk" ? 1 : 0;
       phase = (phase + dt * rate) % 1;
       let j = -1;
       if (jumpStart.current >= 0) {
@@ -352,6 +393,15 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <Limb id="ff" color={color} far ink={ink} refs={refs} front />
           {/* ACME rocket sits between the far and near legs so the horse straddles it */}
           {anim === "rocket" && <image href={rocketArt} x={-112} y={-24} width={240} height={120} />}
+          {anim === "copter" && (
+            <g transform="translate(0 -30)">
+              <rect x="-3" y="0" width="6" height="12" fill="var(--muted)" stroke={ink} strokeWidth="2" />
+              <g className="fx-spin" style={{ animationDuration: ".18s" }}>
+                {[0, 120, 240].map((d) => <g key={d} transform={`rotate(${d})`}><ellipse cx="0" cy="-22" rx="11" ry="20" fill="var(--accent)" stroke={ink} strokeWidth="2.5" /><circle cx="0" cy="-30" r="5" fill="var(--card)" stroke={ink} strokeWidth="2" /></g>)}
+                <circle r="8" fill="var(--primary)" stroke={ink} strokeWidth="2.5" />
+              </g>
+            </g>
+          )}
           {/* tail chain */}
           <g ref={R("t1")}>
             <path d="M0 0 Q-10 8 -4 20 Q4 12 6 2 Z" fill={mane} stroke={ink} strokeWidth="2" strokeLinejoin="round" />
@@ -375,6 +425,13 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
               <ellipse cx="32" cy="4" rx="9" ry="7" fill="#6b21a8" opacity="0.4" />
             </>}
           </g>
+          {anim === "scuba" && (
+            <g>
+              <rect x="-24" y="-40" width="40" height="18" rx="9" fill="var(--gold)" stroke={ink} strokeWidth="3" />
+              <rect x="-18" y="-24" width="4" height="26" fill={ink} /><rect x="6" y="-24" width="4" height="26" fill={ink} />
+              <path d="M16 -32 Q34 -40 40 -26" fill="none" stroke={ink} strokeWidth="3" />
+            </g>
+          )}
           {/* neck + head chain */}
           <g ref={R("neck")}>
             <path d="M-10 6 Q-6 -24 16 -42 L32 -32 Q14 -14 14 10 Z" fill={color} stroke={ink} strokeWidth="3.5" strokeLinejoin="round" />
@@ -424,6 +481,13 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           {/* near legs (in front of body) */}
           <Limb id="hn" color={color} ink={ink} refs={refs} front={false} />
           <Limb id="fn" color={color} ink={ink} refs={refs} front />
+          {anim === "jet" && [0, 1].map((k) => (
+            <g key={k} transform={`translate(${-14 + k * 30} ${4 + k * 2})`}>
+              <rect x="-22" y="-9" width="42" height="18" rx="9" fill="var(--card)" stroke={ink} strokeWidth="3" />
+              <ellipse cx="20" cy="0" rx="4" ry="9" fill={ink} />
+              <path d="M-22 -5 L-36 -8 L-36 8 L-22 5 Z" fill="var(--fx-water)" stroke={ink} strokeWidth="2" />
+            </g>
+          ))}
         </g>
       </g>
       {anim === "glassdoor" && (
@@ -452,6 +516,19 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <circle cx="150" cy="130" r="7" fill="var(--track-dust)" />
           <circle cx="166" cy="126" r="5" fill="var(--track-dust)" />
         </g>
+      )}
+      {anim === "scuba" && (
+        <g>{[0, 1, 2, 3].map((i) => <circle key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.35}s` }} cx={20 - i * 10} cy={70 - i * 8} r={4 + i} fill="none" stroke="var(--fx-water)" strokeWidth="2.5" />)}</g>
+      )}
+      {anim === "laksa" && (
+        <g>
+          {[0, 1, 2].map((i) => <path key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.3}s` }} d={`M${150 + i * 10} 30 q-5 -8 0 -16 q5 -8 0 -16`} fill="none" stroke="var(--card)" strokeWidth="3" strokeLinecap="round" />)}
+          {[0, 1].map((i) => <path key={i} className="fx-bubble" style={{ animationDelay: `${i * 0.45 + 0.15}s` }} d={`M${136 + i * 22} 20 q-6 -10 0 -18 q2 8 6 4 q2 10 -6 14 z`} fill="var(--accent)" stroke="var(--destructive)" strokeWidth="2" />)}
+          <g className="fx-dust"><rect x="10" y="130" width="40" height="4" rx="2" fill="var(--destructive)" /><rect x="-20" y="133" width="30" height="3" rx="1.5" fill="var(--destructive)" opacity="0.6" /></g>
+        </g>
+      )}
+      {anim === "lunge" && (
+        <g className="fx-dust"><circle cx="190" cy="130" r="8" fill="var(--track-dust)" /><circle cx="40" cy="128" r="6" fill="var(--track-dust)" /></g>
       )}
       {anim === "sleep" && (
         <g fill={ink} fontSize="15" fontWeight="900">
