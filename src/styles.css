@@ -91,6 +91,7 @@
   --gold: oklch(0.85 0.17 90);
   --fx-blush: oklch(0.72 0.18 10);
   --fx-water: oklch(0.8 0.1 230);
+  --soup: oklch(0.82 0.08 80);
   --fx-fire: oklch(0.68 0.22 40);
   --track-dust: oklch(0.8 0.06 70 / 70%);
   --board: oklch(0.28 0.06 150);
@@ -217,6 +218,8 @@ body { font-family: var(--font-sans); }
 @keyframes tongue { from { transform: rotate(-15deg) } to { transform: rotate(20deg) scaleY(1.2) } }
 .fx-bubble { animation: bubble 1.5s ease-out infinite; }
 @keyframes bubble { 0% { transform: translateY(20px) scale(.4); opacity: 0 } 30% { opacity: 1 } 100% { transform: translateY(-30px) scale(1.1); opacity: 0 } }
+.fx-ring { animation: ring .6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ring { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 .fx-sweat { animation: sweat .8s ease-in infinite; }
 @keyframes sweat { 0% { transform: translate(0,0); opacity: 1 } 100% { transform: translate(-10px,14px); opacity: 0 } }
 .fx-flame { animation: flame .15s steps(2) infinite alternate; }

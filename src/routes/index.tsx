@@ -405,6 +405,7 @@ function HorseActor({ h, i, phase }: { h: H; i: number; phase: Phase }) {
         </div>
       </div>
       {st === "rocket" && [0, 1, 2].map((k) => <span key={k} className="fx-speedline absolute h-[4px] rounded-full bg-card" style={{ left: -60 - k * 20, top: 100 + k * 14, width: 70 - k * 12, animationDelay: `${k * 0.12}s` }} />)}
+      {st === "timeout" && <span className="fx-spin absolute left-[150px] top-[10px] h-9 w-9 rounded-full border-[5px] border-ink/20 border-t-ink" />}
       {st === "exploded" && <RocketBurst />}
       {st === "wiped" && <BoardBreak />}
       {h.burnt && <><span className="absolute left-[70px] top-[0px] text-2xl fx-smoke">💨</span><span className="absolute left-[130px] top-[10px] text-xl fx-smoke" style={{ animationDelay: ".7s" }}>💨</span></>}

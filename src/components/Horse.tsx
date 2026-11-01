@@ -426,15 +426,6 @@ export function Horse({ color, mane = "var(--ink)", state = "normal", anim, size
           <Limb id="fn" color={color} ink={ink} refs={refs} front />
         </g>
       </g>
-      {anim === "timeout" && (
-        <g transform="translate(150 -6)">
-          <g className="fx-spin">
-            {Array.from({ length: 8 }, (_, i) => (
-              <circle key={i} cx={11 * Math.cos((i * TAU) / 8)} cy={11 * Math.sin((i * TAU) / 8)} r="3" fill={ink} opacity={0.15 + i * 0.1} />
-            ))}
-          </g>
-        </g>
-      )}
       {anim === "glassdoor" && (
         <g transform="translate(196 70)">
           <rect x="-4" y="-80" width="8" height="140" rx="3" fill="var(--fx-water)" stroke={ink} strokeWidth="2" opacity="0.55" />
