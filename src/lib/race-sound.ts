@@ -13,8 +13,7 @@ const CLIPS: Record<Clip, string> = { horn: horn.url, count3: beep3.url, count2:
 export class RaceSound {
   private context: AudioContext | undefined;
   private voices = new Set<OscillatorNode>();
-  private buffers = new Map<Clip, AudioBuffer>();
-  private loading = false;
+  private buffers = new Map<Clip, Promise<AudioBuffer | undefined>>();
   private enabled = false;
 
   setEnabled(enabled: boolean) {
@@ -33,23 +32,24 @@ export class RaceSound {
 
   private loadClips() {
     const ctx = this.context;
-    if (!ctx || this.loading) return;
-    this.loading = true;
+    if (!ctx || this.buffers.size) return;
     for (const [name, url] of Object.entries(CLIPS) as [Clip, string][]) {
-      fetch(url).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
-        .then((buf) => { this.buffers.set(name, buf); }).catch(() => {});
+      this.buffers.set(name, fetch(url).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b)).catch(() => undefined));
     }
   }
 
   playClip(clip: Clip) {
     const ctx = this.context;
-    const buf = this.buffers.get(clip);
-    if (!this.enabled || !ctx || ctx.state !== "running" || !buf) return;
-    const src = ctx.createBufferSource();
-    const gain = ctx.createGain(); gain.gain.value = 0.6;
-    src.buffer = buf; src.connect(gain); gain.connect(ctx.destination);
-    src.onended = () => { src.disconnect(); gain.disconnect(); };
-    src.start();
+    if (!this.enabled || !ctx) return;
+    void this.buffers.get(clip)?.then((buf) => {
+      if (!buf || !this.enabled) return;
+      void ctx.resume().catch(() => {});
+      const src = ctx.createBufferSource();
+      const gain = ctx.createGain(); gain.gain.value = 0.8;
+      src.buffer = buf; src.connect(gain); gain.connect(ctx.destination);
+      src.onended = () => { src.disconnect(); gain.disconnect(); };
+      src.start();
+    });
   }
 
   play(sound: Sound) {
