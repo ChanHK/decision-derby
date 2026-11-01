@@ -110,6 +110,7 @@ function Index() {
     });
     setHorses([...hRef.current]);
     setOrder([]);
+    soundRef.current?.playClip("horn");
     setPhase("pan");
   }
 
@@ -131,6 +132,7 @@ function Index() {
   // tension start: red lights stack up one by one (horses locked in idle), green = gates burst
   useEffect(() => {
     if (phase !== "countdown") return;
+    soundRef.current?.playClip(count === 3 ? "count3" : count === 2 ? "count2" : count === 1 ? "count1" : "go");
     if (count === 0) { const id = setTimeout(() => setPhase("race"), 600); return () => clearTimeout(id); }
     const id = setTimeout(() => setCount((c) => c - 1), 750);
     return () => clearTimeout(id);

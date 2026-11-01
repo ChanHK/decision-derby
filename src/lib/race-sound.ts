@@ -1,11 +1,20 @@
 import type { HorseState } from "./race";
+import horn from "@/assets/race_start_horn.mp3.asset.json";
+import beep3 from "@/assets/440hz.mp3.asset.json";
+import beep2 from "@/assets/550hz.mp3.asset.json";
+import beep1 from "@/assets/660hz.mp3.asset.json";
+import go from "@/assets/gates_open_go.mp3.asset.json";
 
 type Sound = HorseState | "victory";
+export type Clip = "horn" | "count3" | "count2" | "count1" | "go";
+const CLIPS: Record<Clip, string> = { horn: horn.url, count3: beep3.url, count2: beep2.url, count1: beep1.url, go: go.url };
 
-/** Short, original cartoon cues synthesized locally; no downloads or server calls. */
+/** Short, original cartoon cues synthesized locally plus uploaded countdown clips. */
 export class RaceSound {
   private context: AudioContext | undefined;
   private voices = new Set<OscillatorNode>();
+  private buffers = new Map<Clip, AudioBuffer>();
+  private loading = false;
   private enabled = false;
 
   setEnabled(enabled: boolean) {
@@ -18,7 +27,29 @@ export class RaceSound {
     try {
       this.context ??= new AudioContext();
       void this.context.resume().catch(() => {});
+      this.loadClips();
     } catch { this.enabled = false; }
+  }
+
+  private loadClips() {
+    const ctx = this.context;
+    if (!ctx || this.loading) return;
+    this.loading = true;
+    for (const [name, url] of Object.entries(CLIPS) as [Clip, string][]) {
+      fetch(url).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
+        .then((buf) => { this.buffers.set(name, buf); }).catch(() => {});
+    }
+  }
+
+  playClip(clip: Clip) {
+    const ctx = this.context;
+    const buf = this.buffers.get(clip);
+    if (!this.enabled || !ctx || ctx.state !== "running" || !buf) return;
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain(); gain.gain.value = 0.6;
+    src.buffer = buf; src.connect(gain); gain.connect(ctx.destination);
+    src.onended = () => { src.disconnect(); gain.disconnect(); };
+    src.start();
   }
 
   play(sound: Sound) {
