@@ -321,14 +321,14 @@ function Index() {
 
   const setupScreen = (
     <main className="h-full grass-bg flex p-4 overflow-y-auto">
-      <div className="cartoon-card w-full max-w-lg p-6 m-auto">
+      <div className="setup-card cartoon-card w-full max-w-lg p-6 m-auto">
 
           <div className="flex justify-end mb-2">{soundToggle}</div>
-          <h1 className="font-display text-5xl text-center text-primary">Derby Decider</h1>
-          <p className="text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
-          <div className="mt-6 space-y-3">
+          <h1 className="setup-title font-display text-5xl text-center text-primary">Derby Decider</h1>
+          <p className="setup-lead text-center text-muted-foreground mt-1">Can't decide? Let the horses race for it.</p>
+          <div className="setup-rows mt-6 space-y-3">
             {choices.map((c, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="setup-row flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full border-[3px] border-ink shrink-0" style={{ background: COATS[i] }} />
                 <input value={c} maxLength={30} placeholder={`Choice ${i + 1}`}
                   onChange={(e) => setChoices(choices.map((x, j) => (j === i ? e.target.value : x)))}
@@ -341,9 +341,9 @@ function Index() {
             ))}
           </div>
           {choices.length < 5 && (
-            <button onClick={() => setChoices([...choices, ""])} className="mt-3 w-full rounded-xl border-[3px] border-dashed border-ink py-2 font-bold text-muted-foreground">+ Add choice</button>
+            <button onClick={() => setChoices([...choices, ""])} className="setup-add mt-3 w-full rounded-xl border-[3px] border-dashed border-ink py-2 font-bold text-muted-foreground">+ Add choice</button>
           )}
-          <button disabled={valid.length < 2} onClick={requestStart} className="cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
+          <button disabled={valid.length < 2} onClick={requestStart} className="setup-start cartoon-btn mt-6 w-full bg-primary text-primary-foreground py-3 text-2xl font-display disabled:opacity-50">
             And they're off! 🏁
           </button>
           {valid.length < 2 && <p className="text-center text-sm mt-2 text-muted-foreground">Enter at least 2 choices.</p>}
@@ -376,20 +376,20 @@ function Index() {
       </header>
       <div className="flex flex-1 min-h-0 px-1 pb-1 sm:px-2 sm:pb-4 gap-2 sm:gap-3">
         {/* tote board: choice labels beside the lanes */}
-        <aside className="tote w-28 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto p-1.5 sm:p-2">
+        <aside className="tote w-32 sm:w-56 shrink-0 min-h-0 self-stretch overflow-y-auto flex flex-col p-1.5 sm:p-2">
 
-          <div className="font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
+          <div className="tote-head font-display text-center text-accent text-lg h-[116px] flex items-center justify-center tracking-widest">TOTE BOARD</div>
           {choices.map((c, i) => {
             const h = horses[i]; const rank = ranks.indexOf(i); const done = phase === "climax" ? order[0] === i : order.includes(i);
             return (
-              <div key={i} className="h-[150px] flex items-center">
+              <div key={i} className="tote-slot h-[150px] flex items-center">
                 <div className="tote-row w-full p-2">
                   <div className="flex items-center gap-2">
-                    <span className="h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
+                    <span className="tote-badge h-9 w-9 shrink-0 rounded-lg border-[3px] border-ink font-display text-xl flex items-center justify-center text-ink" style={{ background: COATS[i] }}>{i + 1}</span>
                     <div className="font-bold truncate flex-1">{c}</div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between gap-1">
-                    <span className={`font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
+                  <div className="tote-line mt-2 flex items-center justify-between gap-1">
+                    <span className={`tote-rank font-display text-2xl ${rank === 0 ? "text-accent" : ""}`}>{rank >= 0 && phase !== "pan" && phase !== "countdown" ? `${rank + 1}${SUF[rank]}` : "—"}</span>
                     {h && (phase === "race" || phase === "climax") && !done && (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full border-2 border-ink ${STATE_CHIP[h.state]} ${h.state === "drunk" ? "horse-wobble" : ""}`}>
                         {STATE_INFO[h.state].emoji} {STATE_INFO[h.state].label}
@@ -428,9 +428,9 @@ function Index() {
           onPointerMove={(e) => { const drag = dragRef.current; if (drag) e.currentTarget.scrollLeft = drag.scroll + drag.x - e.clientX; }}
           onPointerUp={() => { dragRef.current = null; }} onPointerCancel={() => { dragRef.current = null; }}>
           {/* parallax layer 1: far sky drifts at 0.1x */}
-          <div className="sky-bg pointer-events-none absolute top-0 h-[64px] z-0 border-b-[3px] border-ink" style={{ left: camX * 0.9, width: vw + 200 }} />
+          <div className="sky-bg pointer-events-none absolute top-0 h-[64px] z-0 border-b-[3px] border-ink" style={{ left: camX * 0.9, width: vw + 200 + camX * 0.1 }} />
           {/* parallax layer 2: treeline midground at 0.5x */}
-          <div className="treeline-bg pointer-events-none absolute top-[26px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 }} />
+          <div className="treeline-bg pointer-events-none absolute top-[26px] h-[38px] z-0" style={{ left: camX * 0.5, width: vw + 200 + camX * 0.5 }} />
           {/* live leaderboard, auto-sorted by track position */}
           {(phase === "race" || phase === "climax") && (
             <div className="absolute top-[60px] z-[90] rounded-xl border-[3px] border-ink bg-ink/70 px-3 py-2 pointer-events-none" style={{ left: camX + vw - 190, width: 178 }}>
@@ -486,7 +486,7 @@ function Index() {
             ))}
           </div>
           {/* parallax layer 4: blurred foreground rail whips past at 1.5x */}
-          <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 }} />
+          <div className="fg-rail pointer-events-none absolute bottom-0 h-[46px] z-[80]" style={{ left: camX * 0.5 - 100, width: vw + 400 + camX * 0.5 }} />
           {phase === "climax" && winner !== undefined && (
             <div className="absolute top-0 bottom-0 z-[100] flex items-center justify-center pointer-events-none p-4" style={{ left: viewRef.current?.scrollLeft ?? 0, width: viewRef.current?.clientWidth ?? "100%" }}>
               <div className="decision-slam cartoon-card bg-accent px-6 py-4 text-center">
