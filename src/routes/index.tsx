@@ -7,6 +7,7 @@ import { Crosshair, Volume2, VolumeX } from "lucide-react";
 import rocketArt from "@/assets/rocket.png";
 import hoverArt from "@/assets/hoverboard.png";
 import { RaceSound } from "@/lib/race-sound";
+import { isPhoneDevice } from "@/lib/landscape";
 import { LandscapeGate, Stage, useLandscape, useShortScreen } from "@/components/Stage";
 import { COLUMN_CHROME, fitScale, minFit, podiumShape, showGate, trackHeight } from "@/lib/landscape";
 
@@ -66,7 +67,11 @@ function Index() {
   const hRef = useRef<H[]>([]);
   const valid = choices.map((c) => c.trim()).filter(Boolean);
 
+  const [phone, setPhone] = useState(false);
   useEffect(() => {
+    const isPhone = isPhoneDevice({ coarse: window.matchMedia("(pointer: coarse)").matches, shortSide: Math.min(screen.width, screen.height) });
+    setPhone(isPhone);
+    if (isPhone) return; // phones: no audio engine at all
     const sound = new RaceSound(); soundRef.current = sound;
     return () => { sound.dispose(); soundRef.current = null; };
   }, []);
@@ -103,7 +108,7 @@ function Index() {
     shakeT.current = setTimeout(() => setShake(false), 220);
   }
 
-  const soundToggle = <Button variant="secondary" size="icon" className="cartoon-btn shrink-0" onClick={toggleSound}
+  const soundToggle = phone ? null : <Button variant="secondary" size="icon" className="cartoon-btn shrink-0" onClick={toggleSound}
     aria-label={soundOn ? "Mute sounds" : "Enable sounds"} aria-pressed={soundOn} title={soundOn ? "Mute sounds" : "Enable sounds"}>
     {soundOn ? <Volume2 /> : <VolumeX />}
   </Button>;
