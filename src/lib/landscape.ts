@@ -63,3 +63,8 @@ export function showGate(o: {
 export function podiumShape(short: boolean): { horse: number; blocks: number[] } {
   return short ? { horse: 74, blocks: [64, 46, 30] } : { horse: 110, blocks: [96, 66, 44] };
 }
+
+/** Phones get no sound at all (iOS Safari crashes under many audio voices). */
+export function isPhoneDevice(o: { coarse: boolean; shortSide: number }): boolean {
+  return o.coarse && o.shortSide < 600;
+}
