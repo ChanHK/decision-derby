@@ -297,7 +297,7 @@ function Index() {
         const sliding = act === "finish" && (h.state === "exploded" || h.state === "wiped");
         if (h.state === "lunge" && h.lungeAt !== undefined && t >= h.lungeAt) {
           // hold the deep lunge, then snap forward instantly
-          h.x += vwRef.current * LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
+          h.x += LUNGE_SNAP * (h.reverse ? -1 : 1); h.lungeAt += LUNGE_EVERY;
           void soundRef.current?.playClip("lunge", { volume: 0.7 }); // one sound per lunge
         }
         const v = h.panic && !SELF_SPEED.includes(h.state) ? h.base * PANIC_SPEED : sliding ? h.base * 1.3 : speedFor(h.state, t + i, h.base, prog, h.kick);
