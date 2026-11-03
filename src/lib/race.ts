@@ -37,9 +37,9 @@ export const PANIC_POOL = GADGET_POOL;
 const pickGadget = (rand: () => number) => GADGET_POOL[Math.min(GADGET_POOL.length - 1, Math.floor(rand() * GADGET_POOL.length))]!;
 /** Boosts that move by their own speed instead of the flat panic multiplier. */
 export const SELF_SPEED: HorseState[] = ["jet", "scuba", "laksa", "copter", "lunge"];
-/** Court lunge: seconds per lunge and how far each snap jumps (share of screen width). */
+/** Court lunge: seconds per lunge and how far each snap jumps (track pixels, independent of screen size). */
 export const LUNGE_EVERY = 0.6;
-export const LUNGE_SNAP = 0.2;
+export const LUNGE_SNAP = 160;
 
 /** The six Leader's Curse penalties: each halts the runaway leader with a puppet-rig gag. */
 export const LEADER_CURSES: HorseState[] = ["timeout", "standby", "smash", "glassdoor", "soup", "tactile"];

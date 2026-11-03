@@ -146,3 +146,10 @@ describe("full field of ten", () => {
     expect(ordinal(20)).toBe("21st");
   });
 });
+
+import { LUNGE_SNAP as _LS, LUNGE_EVERY as _LE, durationFor as _dur } from "@/lib/race";
+describe("court lunge nerf", () => {
+  it("three snaps cover about 480 track pixels regardless of screen", () => {
+    expect(_LS * Math.round(_dur("lunge") / _LE)).toBe(480);
+  });
+});
